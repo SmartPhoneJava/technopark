@@ -25,9 +25,6 @@ Memory limit:	64 M
 #define WRONG_INPUT -2 
 #define MEMORY_ERROR -1
 
-#define POSITION_OF_0 48
-#define POSITION_OF_9 57
-
 #define ERROR_NUMBER_NOT_IN_SET -3
 #define ERROR_COMMA_NOT_AFTER_NUMBER -4
 #define ERROR_OPERATOR_IN_SET -5
@@ -42,6 +39,8 @@ Memory limit:	64 M
 #define ERROR_COMMA_WITHOUT_NUMBER -14
 #define ERROR_NO_SQUERE_IN_CIRCLE -15
 
+#define BUFFER_SIZE 32
+
 typedef struct NumericSet
 {
 	int *numbers;
@@ -50,20 +49,101 @@ typedef struct NumericSet
 } NumericSet;
 
 // Обменять местами двух целочисленных значений
+void swap(int *a, int *b);
+
+// Печатать множество
+void printSet(const NumericSet *ns);
+
+// Создать множество
+NumericSet* createSet(int *error);
+
+// Очистить множество
+void clearSet(NumericSet* ns);
+
+// Добавить элемент в множество
+int pushToSet(NumericSet *ns, int num);
+
+// Добавить в мноежство to элементы из множества for
+void addFromSetToSet(NumericSet *to, const NumericSet *from, int *error);
+
+// Создать копию множества from
+NumericSet* copySet(NumericSet *from, int *error);
+
+// Получить пересечение множеств(с очисткой)
+NumericSet *getUnionOfSets(NumericSet *A, NumericSet *B, int* error);
+
+// Получить пересечение множеств(с очисткой)
+NumericSet *getIntersectionOfSets(NumericSet *A, NumericSet *B, int *error);
+
+// получить разность множеств(с очисткой)
+NumericSet* getSubtractionOfSets(NumericSet *A, NumericSet *B, int *error);
+
+// Получить размер числа
+int getNumberSize(int number);
+
+// Вставить число в строку
+void insertNumberInString(int number, char *begin[]);
+
+// Вставить множество в строку
+void numericSetToChar(NumericSet *ns, char *begin, char *end);
+
+// Проверить строку на корректность
+char* checkString(const char* string, size_t size, int *error);
+
+// Получить ответ
+void getAnswer(char* string);
+
+void unit_tests();
+
+int getString(char **lineptr, size_t *n, int delimiter, FILE *stream);
+
+int main()
+{
+	char *buffer = NULL, *string = NULL;
+	int error = NO_ERROR;
+	size_t max_size = BUFFER_SIZE;
+	while (getString(&buffer, &max_size, '\n', stdin) == NO_ERROR)
+	{
+		if (buffer == NULL)
+		{
+			free(buffer);
+			break;
+		}
+		string =  checkString(buffer, strlen(buffer), &error);
+		if (error == NO_ERROR)
+		{
+			getAnswer(string);
+		}
+		else
+		{
+			printf("[error]");
+		}
+		free(buffer);
+		free(string);
+	}
+	
+	return 0;
+}
+
 void swap(int *a, int *b)
 {
 	assert(a != NULL);
 	assert(b != NULL);
+	
+	if ((a == NULL) || (b == NULL))
+		return;
 	
 	int tmp = *a;
 	*a = *b;
 	*b = tmp;
 }
 
-// Печатать множество
-void printSet(NumericSet *ns)
+void printSet(const NumericSet *ns)
 {	
 	assert(ns != NULL);
+	
+	if (ns == NULL)
+		return;
 	
 	int size = ns->real_size;
 	printf("[");
@@ -76,10 +156,12 @@ void printSet(NumericSet *ns)
 	printf("]");
 }
 
-// Создать множество
 NumericSet* createSet(int *error)
 {
 	assert(error != NULL);
+	
+	if (error == NULL)
+		return NULL;
 	
 	NumericSet* ns = (NumericSet*)calloc(1, sizeof(NumericSet));
 	if (ns == NULL)
@@ -99,7 +181,6 @@ NumericSet* createSet(int *error)
 	return ns;
 }
 
-// Очистить множество
 void clearSet(NumericSet* ns)
 {
 	if (ns != NULL)
@@ -109,11 +190,15 @@ void clearSet(NumericSet* ns)
 	}
 }
 
-// Добавить элемент в множество
 int pushToSet(NumericSet *ns, int num)
 {
 	assert(ns != NULL);
 	assert(num >= 0);
+	
+	if ((ns == NULL) || (num < 0))
+	{
+		return WRONG_INPUT;
+	}
 	
 	// Поскольку нигде раньше не стоят проверки на 0
 	if (num == 0)
@@ -132,7 +217,6 @@ int pushToSet(NumericSet *ns, int num)
 	// Если числовое множество полностью заполнилось
 	if (rsize >=  ns->max_size)
 	{
-		// Выделим под него еще памяти
 		ns->max_size *= 2;
 		ns->numbers = (int*)realloc(ns->numbers, ns->max_size * sizeof(int));
 		if (ns->numbers == NULL)
@@ -158,26 +242,49 @@ int pushToSet(NumericSet *ns, int num)
 	return NO_ERROR;
 }
 
-// Добавить в мноежство to элементы из множества for
-void addFromSetToSet(NumericSet *to, NumericSet *from, int *error)
+void addFromSetToSet(NumericSet *to, const NumericSet *from, int *error)
 {
+	assert(to != NULL);
 	assert(from != NULL);
 	assert(error != NULL);
+	
+	if (error == NULL)
+	{
+		return;
+	}
+	
+	if ((from == NULL) || (to == NULL))
+	{
+		*error = WRONG_INPUT;
+		return;
+	}
 	
 	int size = from->real_size;
 	for (int i = 0; i < size; i++)
 	{
 		*error = pushToSet(to, from->numbers[i]); 
 		if (*error != NO_ERROR)
+		{
 			break;
+		}
 	}
 }
 
-// Создать копию множества from
 NumericSet* copySet(NumericSet *from, int *error)
 {
 	assert(from != NULL);
 	assert(error != NULL);
+	
+	if (error == NULL)
+	{
+		return NULL;
+	}
+	
+	if (from == NULL)
+	{
+		*error = WRONG_INPUT;
+		return NULL;
+	}
 	
 	NumericSet *ret = createSet(error);
 
@@ -200,12 +307,22 @@ NumericSet* copySet(NumericSet *from, int *error)
 	return ret;
 }
 
-// Получить пересечение множеств(с очисткой)
 NumericSet *getUnionOfSets(NumericSet *A, NumericSet *B, int* error)
 {
 	assert(A != NULL);
 	assert(B != NULL);
 	assert(error != NULL);
+	
+	if (error == NULL)
+	{
+		return NULL;
+	}
+	
+	if ((A == NULL) || (B == NULL))
+	{
+		*error = WRONG_INPUT;
+		return NULL;
+	}
 	
 	NumericSet *ret = createSet(error);
 	if (*error != NO_ERROR)
@@ -219,12 +336,22 @@ NumericSet *getUnionOfSets(NumericSet *A, NumericSet *B, int* error)
 	return ret;
 }	
 
-// Получить пересечение множеств(с очисткой)
 NumericSet *getIntersectionOfSets(NumericSet *A, NumericSet *B, int *error)
 {
 	assert(A != NULL);
 	assert(B != NULL);
 	assert(error != NULL);
+
+	if (error == NULL)
+	{
+		return NULL;
+	}
+	
+	if ((A == NULL) || (B == NULL))
+	{
+		*error = WRONG_INPUT;
+		return NULL;
+	}
 	
 	NumericSet *ret = createSet(error);
 	if (*error != NO_ERROR)
@@ -262,12 +389,22 @@ NumericSet *getIntersectionOfSets(NumericSet *A, NumericSet *B, int *error)
 	return ret;
 }
 
-// получить разность множеств(с очисткой)
 NumericSet* getSubtractionOfSets(NumericSet *A, NumericSet *B, int *error)
 {
 	assert(A != NULL);
 	assert(B != NULL);
 	assert(error != NULL);
+	
+	if (error == NULL)
+	{
+		return NULL;
+	}
+	
+	if ((A == NULL) || (B == NULL))
+	{
+		*error = WRONG_INPUT;
+		return NULL;
+	}
 	
 	NumericSet *ret = createSet(error);
 	if (*error != NO_ERROR)
@@ -317,7 +454,6 @@ NumericSet* getSubtractionOfSets(NumericSet *A, NumericSet *B, int *error)
 	return ret;
 }
 
-// Получить размер числа
 int getNumberSize(int number)
 {	
 	// Множество натуральных чисел
@@ -332,29 +468,37 @@ int getNumberSize(int number)
 	return size;
 }
 
-// Вставить число в строку
-void insertNumberInString(int number, char **begin)
+void insertNumberInString(int number, char *begin[])
 {
 	assert(begin != NULL);
 	assert(*begin != NULL);
+	
+	if ((begin == NULL) || (*begin == NULL))
+	{
+		return;
+	}
 	
 	int size = getNumberSize(number);
 	
 	for(int i = size - 1; i >= 0; i--)
 	{
-		*((*begin) + i) = number % 10 + POSITION_OF_0;
+		*((*begin) + i) = number % 10 + '0';
 		number /= 10;
 	}
 	
 	*begin = *begin + size;
 }
 
-// Вставить множество в строку
 void numericSetToChar(NumericSet *ns, char *begin, char *end)
 {
 	assert(ns != NULL);
 	assert(begin != NULL);
 	assert(end != NULL);
+	
+	if ((begin == NULL) || (end == NULL) || (ns == NULL))
+	{
+		return;
+	}
 
 	*(begin++) = '[';
 	*end = ']';
@@ -374,12 +518,22 @@ void numericSetToChar(NumericSet *ns, char *begin, char *end)
 	}
 }
 
-// Проверить строку на корректность
-char* checkString(char* string, int size, int *error)
+char* checkString(const char* string, size_t size, int *error)
 {	
 	assert(string != NULL);
 	assert(error != NULL);
 	assert(size > 0);
+	
+	if (error == NULL)
+	{
+		return NULL;
+	}
+	
+	if ((string == NULL) || (size == 0))
+	{
+		*error = WRONG_INPUT;
+		return NULL;
+	}
 
 	int afterNumber = 0; // находится ли символ после числа
 	// Находится ли множество за оператором
@@ -394,13 +548,13 @@ char* checkString(char* string, int size, int *error)
 	int operatorAmount = 0; //количество операторов
 	int afterComma = 0; // находится ли символ за запятой
 	
-	for (int i = 0; i < size; i++)
+	for (size_t i = 0; i < size; i++)
 	{
 		// Если встречен пробел
 		if (string[i] == ' '){}
 		// Если встречена цифра
-		else if ((string[i] >= POSITION_OF_0) &&
-			(string[i] <= POSITION_OF_9))
+		else if ((string[i] >= '0') &&
+			(string[i] <= '9'))
 		{
 			// Если число вне скобок
 			if (afterLeftSquare == 0)
@@ -543,17 +697,30 @@ char* checkString(char* string, int size, int *error)
 	}
 	ret[0] = '(';
 	ret[size + 1] = ')';
-	for (int i = 0; i < size; i++)
+	for (size_t i = 0; i < size; i++)
 	{
 		ret[i + 1] = string[i];
 	}
 	return ret;
 }
 
-// Получить ответ
+int canApplyOPeration()
+{
+	return (!(((priority == 0) && (operator == '^'))
+								||
+								((priority == 1) && (operator == 'U')) 
+								||
+								((priority == 2) && (operator == '\\'))))
+}
+
 void getAnswer(char* string)
 {
 	assert(string != NULL);
+	
+	if (string == NULL)
+	{
+		return;
+	}
 	
 	int strsize = strlen(string);
 	
@@ -565,14 +732,14 @@ void getAnswer(char* string)
 	
 	char operator = ' ';
 	
-	int localBegin = -1;
+	char* localBegin = NULL;
 	
 	int circleBrackets = 1;
 	
 	while (circleBrackets > 0)
 	{
 		circleBrackets = 0;
-		for (int i = 0; i < strsize; i++)
+		for (size_t i = 0; i < strsize; i++)
 		{
 			if (string[i] == '(')
 			{
@@ -583,9 +750,9 @@ void getAnswer(char* string)
 			{
 				for (int priority = 0; priority < 3; priority++)
 				{
-					for (int m = begin; m < i; m++)
+					for (char* letter = string + begin; letter < string + i; letter++)
 					{
-						if (string[m] == '[')
+						if (*letter == '[')
 						{
 							first = createSet(&error);
 							if (error != NO_ERROR)
@@ -600,10 +767,10 @@ void getAnswer(char* string)
 								||
 								((priority == 2) && (operator == '\\'))))
 							{
-								localBegin = m;
+								localBegin = letter;
 							}
 						}
-						else if (string[m] == ']')
+						else if (*letter == ']')
 						{
 							if (number != 0)
 								pushToSet(first, number);
@@ -642,7 +809,7 @@ void getAnswer(char* string)
 								if (error != NO_ERROR)
 									break;
 								
-								numericSetToChar(second, string + localBegin, string + m);
+								numericSetToChar(second, localBegin, letter);
 								
 								operator = ' ';
 							}
@@ -658,7 +825,7 @@ void getAnswer(char* string)
 									break;
 							}
 						}
-						else if (string[m] == ',')
+						else if (*letter == ',')
 						{
 							if (pushToSet(first, number) != NO_ERROR)
 							{
@@ -666,19 +833,19 @@ void getAnswer(char* string)
 							}
 							number = 0;
 						}
-						else if ((string[m] >= POSITION_OF_0) &&
-							(string[m] <= POSITION_OF_9))
+						else if ((*letter >= '0') &&
+							(*letter <= '9'))
 						{
 							number *= 10;
-							number += (string[m] - POSITION_OF_0);
+							number += (*letter - '0');
 						}
-						else if (string[m] == ' ')
+						else if (*letter == ' ')
 						{
 							;
 						}
 						else
 						{
-							operator = string[m];
+							operator = *letter;
 						}
 					}
 				}
@@ -904,33 +1071,66 @@ void unit_tests()
 	right_tests();
 }
 
-void func_tests()
+int getString(char **lineptr, size_t *n, int delimiter, FILE *stream)
 {
-	char* stroka = "([1,     2  , 3 ] U [1,2,42,8] U[])^[1, 8, 3,13]";
-	int strsize = strlen(stroka);
-	int error = 0;
-	char* string =  checkString(stroka, strsize, &error);
-	printf("\n error %d", error);
-	if (string != NULL)
-		getAnswer(string);
-	else
-		printf("[error]");
-}
+	assert(lineptr != NULL);
+	assert(n != NULL);
+	assert(stream != NULL);
+	
+	if ((lineptr == NULL) || (n== NULL) || (stream == NULL))
+	{
+		return WRONG_INPUT;
+	}
+	
+    size_t count = 0;
+    char *pb = NULL;
+    char c = 0;
+   
+    char *tmp = NULL;
 
-int main()
-{
-	//func_tests();
-	setbuf(stdout,NULL);
-	char *buffer = (char*)calloc(100, sizeof(char*));
-	gets(buffer);
-	//char *buffer = " [3,5,7,9,11,13,15]^[2,4,6,8,10,12,14] U [ 8 ,64]";
-	int error = NO_ERROR;
-	char* string =  checkString(buffer, strlen(buffer), &error);
-	if (error == NO_ERROR)
-		getAnswer(string);
-	else
-		printf("[error]");
-	free(buffer);
-	free(string);
-	return 0;
+    if (*lineptr == NULL)
+    {
+        tmp = (char*)calloc(*n, sizeof(char));
+        if (!tmp)
+		{
+			free(*lineptr);
+            return MEMORY_ERROR;
+		}
+        *lineptr = tmp;
+    }
+
+    pb = *lineptr;
+	
+    while ((c = fgetc(stream)) != EOF)
+    {
+        if (count >= *n - 1)
+        {   
+            *n += BUFFER_SIZE;
+            tmp = realloc(*lineptr, *n);
+            if (!tmp)
+			{
+				free(*lineptr);
+				count = 0;
+                break;
+			}
+			*lineptr = tmp;
+			pb = tmp + count;
+		}
+		if (c == delimiter)
+		{
+            break;
+		}
+        *pb = c;
+        pb++;
+        count++;
+    }
+	
+	if (count == 0)
+	{
+		return EOF;
+	}
+
+    *pb = '\0';
+
+    return NO_ERROR;
 }
