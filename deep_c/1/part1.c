@@ -23,72 +23,114 @@ Memory limit:	64 M
 
 #include <assert.h>
 
+#define NO_SYMBOLS 0
 #define ERROR -1
-#define POSITION_OF_FIRST_CAPITAL_EN 65
-#define POSITION_OF_LAST_CAPITAL_EN 90
-#define POSITION_OF_FIRST_CAPITAL_RU 128
-#define POSITION_OF_LAST_CAPITAL_RU 159
 
-#define OFFSET 32
 #define BUFFER_SIZE 32
+#define ARRAY_SIZE 4
 
-int len(char* arr)
+typedef char** string_ptr; 
+
+size_t len(char arr[]);
+
+size_t lowRegistr(char* arr[], const size_t arr_size, string_ptr *save);
+
+size_t getString(char **lineptr, size_t *n, int delimiter, FILE *stream);
+
+void printText(char* text[], const size_t kolvo);
+
+void cleanText(char* text[], const size_t size);
+
+void cleanTexts(char* arr[], char* text[], size_t size);
+
+/* Загрузить строки, возвращает количество строк или
+ -1, если не выделилась память */
+size_t loadText(string_ptr text);
+
+int main(int argc, char* argv[])
 {
-	int size = 0;
-	for (char *ch = arr; *ch != 0; ch++, size++);
+	//setbuf(stdout,NULL);
+	
+	string_ptr arr = (char**)calloc(BUFFER_SIZE, sizeof(char*));
+	size_t text_size = loadText(arr);
+	
+	if (text_size == ERROR)
+	{
+		return 0;
+	}
+	
+	string_ptr text;
+	int lines = lowRegistr(arr, text_size, &text);
+	
+	printText(text, lines);
+	
+	cleanTexts(arr, text, lines);
+	
+	return 0;
+}
+
+size_t len(char arr[])
+{
+	assert(arr != NULL);
+	if (arr == NULL)
+	{
+		return 0;
+	}
+	
+	size_t size = 0;
+	for (char *ch = arr; *ch != '\0'; ch++, size++);
 	return size;
 }
 
-int lowRegistr(char **arr, int arr_size, char ***save)
+size_t lowRegistr(char* arr[], const size_t arr_size, string_ptr *save)
 {
 	assert(arr != NULL);
 	assert(*arr != NULL);
 	assert(save != NULL);
 	assert(arr_size > 0);
 	
-	// выделим память под массив строк
-	*save = (char**)calloc(arr_size, sizeof(char*));
-	
-	// не удалось выделить память
-	if (!*save){
+	if ((arr == NULL) || (*arr == NULL) || (arr_size <= 0)|| (save == NULL))
+	{
 		return ERROR;
 	}
 	
-	// размер строки
-	int row_size = 0;
+	// выделим память под массив строк
+	*save = (char**)calloc(arr_size, sizeof(char*));
 	
-	// цикл по строкам
-	for (int i = 0; i < arr_size; i++)
+	if (!*save)
+	{
+		return ERROR;
+	}
+	size_t row_size = 0;
+	wchar_t letter_a = L'а';
+	wchar_t letter_A = L'А';
+	wchar_t letter_Ja = L'Я';
+
+	for (size_t i = 0; i < arr_size; i++)
 	{
 		row_size = len(arr[i]);
 		
 		//Выделим память непосредственно под строки
 		(*save)[i] = (char*)calloc(row_size + 1, sizeof(char));
-		//(*save)[i][row_size] = 0;
 		
 		// Если не вышло
-		if (!(*save)[i]){
-			// Очистим память строк
-			i--;
-			for (; i >= 0; i--){
-				free((*save)[i]);
-			}
-			// и память массива строк
-			free(*save);
-			
+		if (!(*save)[i])
+		{
+			cleanText(*save, i);
 			return ERROR;
 		}
-
-		//цикл по строке
+		
+		// Преобразование заглавных символов к прописным
 		for (int j = 0; j < row_size; j++)
 		{
-			if ((arr[i][j] >= POSITION_OF_FIRST_CAPITAL_RU) &&
-			(arr[i][j] <= POSITION_OF_LAST_CAPITAL_RU))
+			if ((arr[i][j] >= letter_A) &&
+			(arr[i][j] <= letter_Ja))
 			{
-				arr[i][j] = arr[i][j] + OFFSET;
-			} else if((arr[i][j]  >= POSITION_OF_FIRST_CAPITAL_EN)
-				&& (arr[i][j] <= POSITION_OF_LAST_CAPITAL_EN)){
-				arr[i][j] = arr[i][j] + OFFSET;
+				printf("hmmmm");
+				arr[i][j] = arr[i][j] - (letter_A - letter_a);
+			} else if((arr[i][j]  >= 'A')
+				&& (arr[i][j] <= 'Z')){
+				arr[i][j] = arr[i][j] - ('Z' - 'z');
 			}
 			(*save)[i][j] = arr[i][j];
 		}
@@ -97,15 +139,20 @@ int lowRegistr(char **arr, int arr_size, char ***save)
 	return arr_size;
 }
 
-int my_getdelim(char **lineptr, int *n, int delimiter, FILE *stream)
+size_t getString(char **lineptr, size_t *n, int delimiter, FILE *stream)
 {
 	assert(lineptr != NULL);
 	assert(n != NULL);
 	assert(stream != NULL);
 	
-    int count = 0;
+	if ((lineptr == NULL) || (n== NULL) || (stream == NULL))
+	{
+		return ERROR;
+	}
+	
+    size_t count = NO_SYMBOLS;
     char *pb = NULL;
-    int c = 0;
+    char c = 0;
    
     char *tmp = NULL;
 
@@ -113,67 +160,105 @@ int my_getdelim(char **lineptr, int *n, int delimiter, FILE *stream)
     {
         tmp = realloc(*lineptr, *n);
         if (!tmp)
-            return -1;
+		{
+			free(*lineptr);
+            return ERROR;
+		}
         *lineptr = tmp;
     }
 
     pb = *lineptr;
 	
-    while ((c = fgetc(stream)) != EOF)// && c != delimiter)
+    while ((c = fgetc(stream)) != EOF)
     {
         if (count >= *n - 1)
         {   
             *n += BUFFER_SIZE;
             tmp = realloc(*lineptr, *n);
             if (!tmp)
-                return -1;
-
-            *lineptr = tmp;
-            pb = tmp + count;
-        }
+			{
+				free(*lineptr);
+				count = NO_SYMBOLS;
+                break;
+			}
+			*lineptr = tmp;
+			pb = tmp + count;
+		}
 		if (c == delimiter)
+		{
             break;
+		}
         *pb = c;
         pb++;
         count++;
     }
-    
-    if (count == 0)
-        return -1;
+	
+	if (count == NO_SYMBOLS)
+	{
+		return ERROR;
+	}
 
     *pb = '\0';
 
     return count;
 }
 
-int main(int argc, char* argv[])
+void printText(char* text[], const size_t kolvo)
 {
-	setbuf(stdout,NULL);
-      
-   char **arr = (char**)calloc(BUFFER_SIZE, sizeof(char*));
-   int i = 0;
-   int max_size = BUFFER_SIZE;
-do
-{
-	arr[i] = (char*)calloc(BUFFER_SIZE, sizeof(char));
-}
-while (my_getdelim(&arr[i++], &max_size, '\n', stdin) != -1);
-   char** text = NULL;
-   int lines = lowRegistr(arr, i, &text);
-   if (lines == ERROR)
-	   printf("[error]");
-   else
-   {
-		for (int f = 0; f < lines; f++)
+	assert(text != NULL);
+	
+	if ((kolvo < 0) || (text == NULL))
+	{
+		printf("[error]");
+		return;
+	}
+	for (size_t i = 0; i < kolvo; i++)
+	{
+		if (i != 0)
 		{
-			if (f != 0)
-				printf("\n");
-			printf("%s", text[f]);
-			free(arr[f]);
-			free(text[f]);
+			printf("\n");
 		}
-   }
-	free(arr);
+		printf("%s", text[i]);
+	}
+}
+
+void cleanText(char* text[], const size_t size)
+{
+	for (size_t i = 0; i < size; i++)
+	{
+		free(text[i]);
+	}
 	free(text);
-	return 0;
+}
+
+void cleanTexts(char* arr[], char* text[], const size_t size)
+{
+	cleanText(arr, size);
+	cleanText(text, size);
+}
+
+size_t loadText(string_ptr text)
+{
+	assert(text != NULL);
+	if (text == NULL)
+	{
+		return ERROR;
+	}
+	
+	size_t i = 0;
+	size_t max_size = BUFFER_SIZE;
+	do
+	{
+		text[i] = (char*)calloc(BUFFER_SIZE, sizeof(char));
+		if (text[i] == NULL)
+		{
+			cleanText(text, i);
+			i = 0;
+			break;
+		}
+	}
+	while (getString(&text[i++], &max_size, '\n', stdin) != ERROR);
+	if (i == 0)
+		return ERROR;
+	return i;
 }
