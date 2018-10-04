@@ -20,6 +20,7 @@ Memory limit:	64 M
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #define NO_ERROR 0
 #define WRONG_INPUT -2 
@@ -99,6 +100,8 @@ int getString(char **lineptr, size_t *n, int delimiter, FILE *stream);
 
 int main()
 {
+	//unit_tests();
+	
 	char *buffer = NULL, *string = NULL;
 	int error = NO_ERROR;
 	size_t max_size = BUFFER_SIZE;
@@ -514,54 +517,53 @@ char* checkString(const char* string, size_t size, int *error)
 		return NULL;
 	}
 
-	int afterNumber = 0; // находится ли символ после числа
+	bool afterNumber = false; // находится ли символ после числа
 	// Находится ли множество за оператором
 	// -1 - первый элемент, 1 - находится за оператором, 0 - не находится
 	int afterOperator = -1; 
+	bool afterComma = false; // находится ли символ за запятой
 	
-	int afterLeftSquare = 0; // после '['
-	int afterLeftCircle = 0; // после '('
-	int squareInCircle = 1; // Круглые скобки содержат в себе множества
+	bool afterLeftSquare = false; // после '['
+	bool squareInCircle = true; // Круглые скобки содержат в себе множества
 	
+	int circleBracketsAmount = 0; // Количсетво круглых скобок
 	int setAmount = 0; //количество множеств
 	int operatorAmount = 0; //количество операторов
-	int afterComma = 0; // находится ли символ за запятой
 	
-	for (size_t i = 0; i < size; i++)
+	for (const char* symbol = string; *symbol != '\0'; symbol++)
 	{
 		// Если встречен пробел
-		if (string[i] == ' '){}
+		if (*symbol == ' '){}
 		// Если встречена цифра
-		else if ((string[i] >= '0') &&
-			(string[i] <= '9'))
+		else if ((*symbol >= '0') &&
+			(*symbol <= '9'))
 		{
 			// Если число вне скобок
-			if (afterLeftSquare == 0)
+			if (afterLeftSquare == false)
 			{
 				*error = ERROR_NUMBER_NOT_IN_SET;
 				break;
 			}
-			afterComma = 0; // следующий символ  не находится за запятой
-			afterNumber = 1; // следующий символ находится за числом
+			afterComma = false; // следующий символ  не находится за запятой
+			afterNumber = true; // следующий символ находится за числом
 		}
-		// Если символ ','
-		else if (string[i] == ',')
+		else if (*symbol == ',')
 		{
 			// Если запятая не идет после числа
-			if (afterNumber == 0)
+			if (afterNumber == false)
 			{
 				*error = ERROR_COMMA_NOT_AFTER_NUMBER;
 				break;
 			}
-			afterNumber = 0; // следующий символ не находится за числом
-			afterComma = 1; // следующий символ находится за запятой
+			afterNumber = false; // следующий символ не находится за числом
+			afterComma = true; // следующий символ находится за запятой
 		}
 		// Если обнаружен один из операторов
-		else if ((string[i] == 'U') ||
-		(string[i] == '^') || (string[i] == '\\'))
+		else if ((*symbol == 'U') ||
+		(*symbol == '^') || (*symbol == '\\'))
 		{
 			// Если оператор идет после '['
-			if (afterLeftSquare == 1)
+			if (afterLeftSquare == true)
 			{
 				*error = ERROR_OPERATOR_IN_SET;
 				break;
@@ -569,8 +571,7 @@ char* checkString(const char* string, size_t size, int *error)
 			operatorAmount++; // Инкремент количества операторов
 			afterOperator = 1;
 		}
-		// Если символ '['
-		else if (string[i] == '[')
+		else if (*symbol == '[')
 		{
 			// Если множество не за оператором
 			if (afterOperator == 0)
@@ -578,16 +579,16 @@ char* checkString(const char* string, size_t size, int *error)
 				*error = ERROR_OPERATOR_WITHOUT_SETS;
 				break;
 			}
-			afterLeftSquare = 1; // Последующие символы после [
+			afterLeftSquare = true; // Последующие символы после [
 			afterOperator = 0; // Последующие символы не за оператором
 			setAmount++; // Инкремент количества множеств
-			if (afterLeftCircle > 0)
-				squareInCircle = 1; // Обнаружено множество в скобках
+			if (circleBracketsAmount > 0)
+				squareInCircle = true; // Обнаружено множество в скобках
 		}
-		else if (string[i] == ']')
+		else if (*symbol == ']')
 		{
 			// Если конец множества идёт сразу после запятой
-			if (afterComma == 1)
+			if (afterComma == true)
 			{
 				*error = ERROR_COMMA_WITHOUT_NUMBER;
 				break;
@@ -600,7 +601,7 @@ char* checkString(const char* string, size_t size, int *error)
 			}
 			afterLeftSquare = 0; // Дальше символы идут вне множества
 		}
-		else if (string[i] == '(')
+		else if (*symbol == '(')
 		{
 			// Если круглая скобка внутри квадратной
 			if (afterLeftSquare == 1)
@@ -608,15 +609,15 @@ char* checkString(const char* string, size_t size, int *error)
 				*error = ERROR_CIRCLE_IN_SQUERE;
 				break;
 			}
-			afterLeftCircle++; // Последующие символы после (
+			circleBracketsAmount++; // Последующие символы после (
 			squareInCircle = 0; // Скобки не содержат множеств
 		}
-		else if (string[i] == ')')
+		else if (*symbol == ')')
 		{
 			// Количество скобок уменьшилось
-			afterLeftCircle--;
+			circleBracketsAmount--;
 			// Если ')' идет первее '('
-			if (afterLeftCircle < 0)
+			if (circleBracketsAmount < 0)
 			{
 				*error = ERROR_CIRCLE_END_BEFORE_START;
 				break;
@@ -631,7 +632,6 @@ char* checkString(const char* string, size_t size, int *error)
 		}
 		else
 		{
-			printf("\n delete it %c", string[i]);
 			// если запрещенный символ
 			*error = ERROR_WRONG_SYMBOL;
 			break;;
@@ -644,7 +644,7 @@ char* checkString(const char* string, size_t size, int *error)
 	}
 	
 	// Если одна из круглых скобок не закрылась
-	if (afterLeftCircle > 0)
+	if (circleBracketsAmount > 0)
 	{
 		*error = ERROR_NO_CIRCLE_END;
 		return NULL;
@@ -666,7 +666,7 @@ char* checkString(const char* string, size_t size, int *error)
 	}
 	
 	// Круглые скобки не содержут в себе множеств
-	if (squareInCircle == 0)
+	if (squareInCircle == false)
 	{
 		*error = ERROR_NO_SQUERE_IN_CIRCLE;
 		return NULL;
@@ -688,14 +688,38 @@ char* checkString(const char* string, size_t size, int *error)
 	return ret;
 }
 
-/*
-int canApplyOPeration(const int priority, char )
+NumericSet* applyOPeration(char operator, NumericSet* first,
+							NumericSet* second, int *error)
 {
-	return (((priority == 0) && (operator == '^')) ||
-			((priority == 1) && (operator == 'U')) ||
-			((priority == 2) && (operator == '\\')));
+	NumericSet* result = NULL;
+	switch(operator)
+	{
+		case 'U':
+		{
+			result = getUnionOfSets(first, second, error);
+			break;
+		}
+		case '\\':
+		{
+			result = getSubtractionOfSets(first, second,
+											error);
+			break;
+		}
+		case '^':
+		{
+			result = getIntersectionOfSets(first, second,
+											error);
+			break;
+		}
+		default:
+		{
+			*error = ERROR_WRONG_SYMBOL;
+			clearSet(first);
+			clearSet(second);
+		}
+	}
+	return result;
 }
-*/
 
 void getAnswer(char* string)
 {
@@ -712,7 +736,7 @@ void getAnswer(char* string)
 	
 	int error = NO_ERROR;
 	
-	NumericSet *first = NULL, *second = NULL, *result = NULL;
+	NumericSet *first = NULL, *second = NULL;
 	
 	char operator = ' ';
 	
@@ -768,30 +792,8 @@ void getAnswer(char* string)
 							
 							if (*currentOperator == operator)
 							{
-								switch(operator)
-								{
-									case 'U':
-									{
-										result = getUnionOfSets(first, second, &error);
-										break;
-									}
-									case '\\':
-									{
-										result = getSubtractionOfSets(first, second,
-																		&error);
-										break;
-									}
-									case '^':
-									{
-										result = getIntersectionOfSets(first, second,
-																		&error);
-										break;
-									}
-								}
-								if (error != NO_ERROR)
-									break;
-								
-								second = moveSet(result);
+								second = applyOPeration(operator,
+									first, second, &error);
 								if (error != NO_ERROR)
 									break;
 								
@@ -807,8 +809,6 @@ void getAnswer(char* string)
 								}
 								
 								second = moveSet(first);
-								if (error != NO_ERROR)
-									break;
 							}
 						}
 						else if (*letter == ',')
