@@ -66,8 +66,8 @@ int pushToSet(NumericSet *ns, int num);
 // Добавить в мноежство to элементы из множества for
 void addFromSetToSet(NumericSet *to, const NumericSet *from, int *error);
 
-// Создать копию множества from
-NumericSet* copySet(NumericSet *from, int *error);
+// Переместить множество
+NumericSet* moveSet(NumericSet *from);
 
 // Получить пересечение множеств(с очисткой)
 NumericSet *getUnionOfSets(NumericSet *A, NumericSet *B, int* error);
@@ -282,40 +282,10 @@ void addFromSetToSet(NumericSet *to, const NumericSet *from, int *error)
 	}
 }
 
-NumericSet* copySet(NumericSet *from, int *error)
-{
-	assert(from != NULL);
-	assert(error != NULL);
-	
-	if (error == NULL)
-	{
-		return NULL;
-	}
-	
-	if (from == NULL)
-	{
-		*error = WRONG_INPUT;
-		return NULL;
-	}
-	
-	NumericSet *ret = createSet(error);
-
-	if (*error == NO_ERROR)
-	{
-		int size = from->real_size;
-		for (int i = 0; i < size; i++)
-		{
-			pushToSet(ret, from->numbers[i]);
-			if (*error != NO_ERROR)
-				break;
-		}
-	}
-	if (*error != NO_ERROR)
-	{
-		clearSet(ret);
-		return NULL;
-	}
-	clearSet(from);
+NumericSet* moveSet(NumericSet *from)
+{	
+	NumericSet *ret = from;
+	from = NULL;
 	return ret;
 }
 
@@ -371,8 +341,8 @@ NumericSet *getIntersectionOfSets(NumericSet *A, NumericSet *B, int *error)
 		return NULL;
 	}
 	
-	int sizeA = A->real_size, sizeB = B->real_size;
-	int iA = 0, iB = 0;
+	size_t sizeA = A->real_size, sizeB = B->real_size;
+	size_t iA = 0, iB = 0;
 	
 	while ((iA < sizeA) && (iB < sizeB))
 	{
@@ -424,8 +394,8 @@ NumericSet* getSubtractionOfSets(NumericSet *A, NumericSet *B, int *error)
 		return NULL;
 	}
 	
-	int sizeA = A->real_size, sizeB = B->real_size;
-	int iA = 0, iB = 0;
+	size_t sizeA = A->real_size, sizeB = B->real_size;
+	size_t iA = 0, iB = 0;
 	while ((iA < sizeA) && (iB < sizeB))
 	{
 		if (A->numbers[iA] < B->numbers[iB])
@@ -453,12 +423,12 @@ NumericSet* getSubtractionOfSets(NumericSet *A, NumericSet *B, int *error)
 	while(iB < sizeB)
 	{
 		*error = pushToSet(ret, A->numbers[iB]);
-		iB++;
 		if (*error != NO_ERROR)
 		{
 			clearSet(ret);
 			return NULL;
 		}
+		iB++;
 	}
 	
 	clearSet(A);
@@ -787,7 +757,13 @@ void getAnswer(char* string)
 						else if (*letter == ']')
 						{
 							if (number != 0)
-								pushToSet(first, number);
+							{
+								error = pushToSet(first, number);
+								if (error != NO_ERROR)
+								{
+									break;
+								}
+							}
 							number = 0;
 							
 							if (*currentOperator == operator)
@@ -815,7 +791,7 @@ void getAnswer(char* string)
 								if (error != NO_ERROR)
 									break;
 								
-								second = copySet(result, &error);
+								second = moveSet(result);
 								if (error != NO_ERROR)
 									break;
 								
@@ -830,7 +806,7 @@ void getAnswer(char* string)
 									clearSet(second);
 								}
 								
-								second = copySet(first, &error);
+								second = moveSet(first);
 								if (error != NO_ERROR)
 									break;
 							}
