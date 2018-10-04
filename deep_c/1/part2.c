@@ -106,19 +106,19 @@ int main()
 	{
 		if (buffer == NULL)
 		{
-			free(buffer);
 			break;
 		}
 		string =  checkString(buffer, strlen(buffer), &error);
-		if (error == NO_ERROR)
+		free(buffer);
+		if (string != NULL)
 		{
 			getAnswer(string);
 		}
 		else
 		{
 			printf("[error]");
+			break;
 		}
-		free(buffer);
 		free(string);
 	}
 	
@@ -560,7 +560,7 @@ char* checkString(const char* string, size_t size, int *error)
 			if (afterLeftSquare == 0)
 			{
 				*error = ERROR_NUMBER_NOT_IN_SET;
-				return NULL;
+				break;
 			}
 			afterComma = 0; // следующий символ  не находится за запятой
 			afterNumber = 1; // следующий символ находится за числом
@@ -572,7 +572,7 @@ char* checkString(const char* string, size_t size, int *error)
 			if (afterNumber == 0)
 			{
 				*error = ERROR_COMMA_NOT_AFTER_NUMBER;
-				return NULL;
+				break;
 			}
 			afterNumber = 0; // следующий символ не находится за числом
 			afterComma = 1; // следующий символ находится за запятой
@@ -585,7 +585,7 @@ char* checkString(const char* string, size_t size, int *error)
 			if (afterLeftSquare == 1)
 			{
 				*error = ERROR_OPERATOR_IN_SET;
-				return NULL;
+				break;
 			}
 			operatorAmount++; // Инкремент количества операторов
 			afterOperator = 1;
@@ -597,7 +597,7 @@ char* checkString(const char* string, size_t size, int *error)
 			if (afterOperator == 0)
 			{
 				*error = ERROR_OPERATOR_WITHOUT_SETS;
-				return NULL;
+				break;
 			}
 			afterLeftSquare = 1; // Последующие символы после [
 			afterOperator = 0; // Последующие символы не за оператором
@@ -611,13 +611,13 @@ char* checkString(const char* string, size_t size, int *error)
 			if (afterComma == 1)
 			{
 				*error = ERROR_COMMA_WITHOUT_NUMBER;
-				return NULL;
+				break;
 			}
 			// Если ']' идет первее '['
 			if (afterLeftSquare == 0)
 			{
 				*error = ERROR_SQUERE_END_BEFORE_START;
-				return NULL;
+				break;
 			}
 			afterLeftSquare = 0; // Дальше символы идут вне множества
 		}
@@ -627,7 +627,7 @@ char* checkString(const char* string, size_t size, int *error)
 			if (afterLeftSquare == 1)
 			{
 				*error = ERROR_CIRCLE_IN_SQUERE;
-				return NULL;
+				break;
 			}
 			afterLeftCircle++; // Последующие символы после (
 			squareInCircle = 0; // Скобки не содержат множеств
@@ -640,13 +640,13 @@ char* checkString(const char* string, size_t size, int *error)
 			if (afterLeftCircle < 0)
 			{
 				*error = ERROR_CIRCLE_END_BEFORE_START;
-				return NULL;
+				break;
 			}
 			// Если еще не было обьявлено ни одного множества
 			if (afterOperator == -1)
 			{
 				*error = ERROR_NO_SQUERE_IN_CIRCLE ;
-				return NULL;
+				break;
 			}
 			afterOperator = 0; // Следующее множество не за оператором
 		}
@@ -655,8 +655,13 @@ char* checkString(const char* string, size_t size, int *error)
 			printf("\n delete it %c", string[i]);
 			// если запрещенный символ
 			*error = ERROR_WRONG_SYMBOL;
-			return NULL;
+			break;;
 		}
+	}
+	
+	if (*error != NO_ERROR)
+	{
+		return NULL;
 	}
 	
 	// Если одна из круглых скобок не закрылась
@@ -704,14 +709,14 @@ char* checkString(const char* string, size_t size, int *error)
 	return ret;
 }
 
-int canApplyOPeration()
+/*
+int canApplyOPeration(const int priority, char )
 {
-	return (!(((priority == 0) && (operator == '^'))
-								||
-								((priority == 1) && (operator == 'U')) 
-								||
-								((priority == 2) && (operator == '\\'))))
+	return (((priority == 0) && (operator == '^')) ||
+			((priority == 1) && (operator == 'U')) ||
+			((priority == 2) && (operator == '\\')));
 }
+*/
 
 void getAnswer(char* string)
 {
@@ -736,6 +741,9 @@ void getAnswer(char* string)
 	
 	int circleBrackets = 1;
 	
+	// Возможные операции
+	char operations[] = "^U\\";
+	
 	while (circleBrackets > 0)
 	{
 		circleBrackets = 0;
@@ -748,7 +756,8 @@ void getAnswer(char* string)
 			}
 			else if (string[i] == ')')
 			{
-				for (int priority = 0; priority < 3; priority++)
+				for (char* currentOperator = operations; 
+				*currentOperator != '\0'; currentOperator++)
 				{
 					for (char* letter = string + begin; letter < string + i; letter++)
 					{
@@ -761,11 +770,7 @@ void getAnswer(char* string)
 							}
 							number = 0; 
 							
-							if (!(((priority == 0) && (operator == '^'))
-								||
-								((priority == 1) && (operator == 'U')) 
-								||
-								((priority == 2) && (operator == '\\'))))
+							if (!(*currentOperator == operator))
 							{
 								localBegin = letter;
 							}
@@ -776,11 +781,7 @@ void getAnswer(char* string)
 								pushToSet(first, number);
 							number = 0;
 							
-							if (((priority == 0) && (operator == '^'))
-								||
-								((priority == 1) && (operator == 'U')) 
-								||
-								((priority == 2) && (operator == '\\')))
+							if (*currentOperator == operator)
 							{
 								switch(operator)
 								{
