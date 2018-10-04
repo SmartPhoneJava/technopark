@@ -44,8 +44,8 @@ Memory limit:	64 M
 typedef struct NumericSet
 {
 	int *numbers;
-	int max_size;
-	int real_size;
+	size_t max_size;
+	size_t real_size;
 } NumericSet;
 
 // Обменять местами двух целочисленных значений
@@ -79,7 +79,7 @@ NumericSet *getIntersectionOfSets(NumericSet *A, NumericSet *B, int *error);
 NumericSet* getSubtractionOfSets(NumericSet *A, NumericSet *B, int *error);
 
 // Получить размер числа
-int getNumberSize(int number);
+size_t getNumberSize(int number);
 
 // Вставить число в строку
 void insertNumberInString(int number, char *begin[]);
@@ -131,7 +131,9 @@ void swap(int *a, int *b)
 	assert(b != NULL);
 	
 	if ((a == NULL) || (b == NULL))
+	{
 		return;
+	}
 	
 	int tmp = *a;
 	*a = *b;
@@ -143,15 +145,20 @@ void printSet(const NumericSet *ns)
 	assert(ns != NULL);
 	
 	if (ns == NULL)
-		return;
-	
-	int size = ns->real_size;
-	printf("[");
-	for(int i = 0; i < size; i++)
 	{
-		if (i != 0)
-			printf(",");
-		printf("%d", ns->numbers[i]);
+		return;
+	}
+	
+	size_t size = ns->real_size;
+	if (size == 0)
+	{
+		printf("[]");
+		return;
+	}
+	printf("[%d", ns->numbers[0]);
+	for(size_t i = 1; i < size; i++)
+	{
+		printf(",%d", ns->numbers[i]);
 	}
 	printf("]");
 }
@@ -161,7 +168,9 @@ NumericSet* createSet(int *error)
 	assert(error != NULL);
 	
 	if (error == NULL)
+	{
 		return NULL;
+	}
 	
 	NumericSet* ns = (NumericSet*)calloc(1, sizeof(NumericSet));
 	if (ns == NULL)
@@ -169,6 +178,7 @@ NumericSet* createSet(int *error)
 		*error = MEMORY_ERROR;
 		return NULL;
 	}
+	
 	ns->max_size = 2;
 	ns->real_size = 0;
 	ns->numbers = (int*)calloc(ns->max_size, sizeof(int));
@@ -193,26 +203,26 @@ void clearSet(NumericSet* ns)
 int pushToSet(NumericSet *ns, int num)
 {
 	assert(ns != NULL);
-	assert(num >= 0);
+	assert(num > 0);
+	assert(ns->numbers != NULL);
+	assert(ns->real_size >= 0);
+	assert(ns->max_size >= 0);
 	
-	if ((ns == NULL) || (num < 0))
+	if ((ns == NULL) || (num <= 0) || (ns->numbers == NULL) ||
+		(ns->real_size < 0) || (ns->max_size <= 0))
 	{
 		return WRONG_INPUT;
 	}
-	
-	// Поскольку нигде раньше не стоят проверки на 0
-	if (num == 0)
-		return NO_ERROR;
 	
 	// Если числовое множество не содержит элементов
 	if (ns->real_size == 0)
 	{
 		ns->numbers[0] = num;
-		ns->real_size = ns->real_size + 1;
+		ns->real_size++;
 		return NO_ERROR;
 	}
 	
-	int rsize = ns->real_size;
+	size_t rsize = ns->real_size;
 	
 	// Если числовое множество полностью заполнилось
 	if (rsize >=  ns->max_size)
@@ -220,9 +230,11 @@ int pushToSet(NumericSet *ns, int num)
 		ns->max_size *= 2;
 		ns->numbers = (int*)realloc(ns->numbers, ns->max_size * sizeof(int));
 		if (ns->numbers == NULL)
+		{
 			return MEMORY_ERROR;
+		}
 	}
-	for(int i = 0; i < rsize; i++)
+	for(size_t i = 0; i < rsize; i++)
 	{
 		if (num == ns->numbers[i])
 		{
@@ -454,12 +466,9 @@ NumericSet* getSubtractionOfSets(NumericSet *A, NumericSet *B, int *error)
 	return ret;
 }
 
-int getNumberSize(int number)
+size_t getNumberSize(int number)
 {	
-	// Множество натуральных чисел
-	assert(number > 0);
-	
-	int size = 0;
+	size_t size = 0;
 	while (number != 0)
 	{
 		number /= 10;
@@ -478,11 +487,11 @@ void insertNumberInString(int number, char *begin[])
 		return;
 	}
 	
-	int size = getNumberSize(number);
+	size_t size = getNumberSize(number);
 	
-	for(int i = size - 1; i >= 0; i--)
+	for(size_t i = size; i > 0; i--)
 	{
-		*((*begin) + i) = number % 10 + '0';
+		*((*begin) + i - 1) = number % 10 + '0';
 		number /= 10;
 	}
 	
