@@ -64,7 +64,7 @@ void clearSet(NumericSet* ns);
 // Добавить элемент в множество
 int pushToSet(NumericSet *ns, int num);
 
-// Добавить в мноежство to элементы из множества for
+// Добавить в множество to элементы из множества for
 void addFromSetToSet(NumericSet *to, const NumericSet *from, int *error);
 
 // Переместить множество
@@ -124,7 +124,6 @@ int main()
 		}
 		free(string);
 	}
-	
 	return 0;
 }
 
@@ -500,6 +499,146 @@ void numericSetToChar(NumericSet *ns, char *begin, char *end)
 	}
 }
 
+bool isSymbolComma(char symbol)
+{
+	return symbol == ',';
+}
+
+bool isSymbolLeftCircleBracket(char symbol)
+{
+	return symbol == '(';
+}
+
+bool isSymbolRightCircleBracket(char symbol)
+{
+	return symbol == ')';
+}
+
+bool isSymbolLeftSquareBracket(char symbol)
+{
+	return symbol == '[';
+}
+
+bool isSymbolRightSquareBracket(char symbol)
+{
+	return symbol == ']';
+}
+
+bool isSymbolSpace(char symbol)
+{
+	return symbol == ' ';
+}
+
+bool isSymbolNumber(char symbol)
+{
+	return symbol >= '0' && symbol <= '9';
+}
+
+bool isSymbolOperator(char symbol)
+{
+	return symbol == 'U' || symbol == '^' || symbol == '\\';
+}
+
+void checkNumber(const bool afterLeftSquare, bool *afterComma,
+				bool *afterNumber, int *error)
+{
+	// Если число вне скобок
+	if (afterLeftSquare == false)
+	{
+		*error = ERROR_NUMBER_NOT_IN_SET;
+	}
+	*afterComma = false; // следующий символ  не находится за запятой
+	*afterNumber = true; // следующий символ находится за числом
+}
+
+void checkComma(bool *afterNumber, bool* afterComma, int* error)
+{
+	// Если запятая не идет после числа
+	if (*afterNumber == false)
+	{
+		*error = ERROR_COMMA_NOT_AFTER_NUMBER;
+	}
+	*afterNumber = false; // следующий символ не находится за числом
+	*afterComma = true; // следующий символ находится за запятой
+}
+
+void checkOperator(const bool afterLeftSquare, int* operatorAmount,
+					int* afterOperator, int* error)
+{
+	// Если оператор идет после '['
+	if (afterLeftSquare == true)
+	{
+		*error = ERROR_OPERATOR_IN_SET;
+	}
+	*operatorAmount = *operatorAmount + 1; // Инкремент количества операторов
+	*afterOperator = 1;
+}
+
+void checkLeftSquareBracket(const int circleBracketsAmount, int *afterOperator,
+							bool *afterLeftSquare, bool* squareInCircle,
+							int *setAmount, int *error)
+{
+	// Если множество не за оператором
+	if (*afterOperator == 0)
+	{
+		*error = ERROR_OPERATOR_WITHOUT_SETS;
+	}
+	*afterLeftSquare = true; // Последующие символы после [
+	*afterOperator = 0; // Последующие символы не за оператором
+	*setAmount = *setAmount + 1; // Инкремент количества множеств
+	if (circleBracketsAmount > 0)
+	{
+		*squareInCircle = true; // Обнаружено множество в скобках
+	}
+}
+
+void checkRightSquareBracket(const bool afterComma, bool *afterLeftSquare,
+								int *error)
+{
+	// Если конец множества идёт сразу после запятой
+	if (afterComma == true)
+	{
+		*error = ERROR_COMMA_WITHOUT_NUMBER;
+	}
+	// Если ']' идет первее '['
+	if (*afterLeftSquare == false)
+	{
+		*error = ERROR_SQUERE_END_BEFORE_START;
+	}
+	*afterLeftSquare = false; // Дальше символы идут вне множества
+}
+
+void checkLeftCircleBracket(const bool afterLeftSquare, bool *squareInCircle,
+							int* circleBracketsAmount, int *error)
+{
+	// Если круглая скобка внутри квадратной
+	if (afterLeftSquare == 1)
+	{
+		*error = ERROR_CIRCLE_IN_SQUERE;
+	}
+	// Последующие символы после '('
+	*circleBracketsAmount = *circleBracketsAmount + 1;
+	*squareInCircle = 0; // Скобки не содержат множеств
+}
+
+void checkRightCircleBracket(int *circleBracketsAmount, int *afterOperator,
+								int *error)
+{
+	// Количество скобок уменьшилось
+	*circleBracketsAmount = *circleBracketsAmount - 1;
+	// Если ')' идет первее '('
+	if (*circleBracketsAmount < 0)
+	{
+		*error = ERROR_CIRCLE_END_BEFORE_START;
+	}
+	// Если еще не было обьявлено ни одного множества
+	if (*afterOperator == -1)
+	{
+		*error = ERROR_NO_SQUERE_IN_CIRCLE ;
+	}
+	*afterOperator = 0; // Следующее множество не за оператором
+}
+
 char* checkString(const char* string, size_t size, int *error)
 {	
 	assert(string != NULL);
@@ -532,109 +671,47 @@ char* checkString(const char* string, size_t size, int *error)
 	
 	for (const char* symbol = string; *symbol != '\0'; symbol++)
 	{
-		// Если встречен пробел
-		if (*symbol == ' '){}
-		// Если встречена цифра
-		else if ((*symbol >= '0') &&
-			(*symbol <= '9'))
+		if (isSymbolSpace(*symbol)){}
+		else if (isSymbolNumber(*symbol))
 		{
-			// Если число вне скобок
-			if (afterLeftSquare == false)
-			{
-				*error = ERROR_NUMBER_NOT_IN_SET;
-				break;
-			}
-			afterComma = false; // следующий символ  не находится за запятой
-			afterNumber = true; // следующий символ находится за числом
+			checkNumber(afterLeftSquare, &afterComma, &afterNumber, error);
 		}
-		else if (*symbol == ',')
+		else if (isSymbolComma(*symbol))
 		{
-			// Если запятая не идет после числа
-			if (afterNumber == false)
-			{
-				*error = ERROR_COMMA_NOT_AFTER_NUMBER;
-				break;
-			}
-			afterNumber = false; // следующий символ не находится за числом
-			afterComma = true; // следующий символ находится за запятой
+			checkComma(&afterNumber, &afterComma, error);
 		}
-		// Если обнаружен один из операторов
-		else if ((*symbol == 'U') ||
-		(*symbol == '^') || (*symbol == '\\'))
+		else if (isSymbolOperator(*symbol))
 		{
-			// Если оператор идет после '['
-			if (afterLeftSquare == true)
-			{
-				*error = ERROR_OPERATOR_IN_SET;
-				break;
-			}
-			operatorAmount++; // Инкремент количества операторов
-			afterOperator = 1;
+			checkOperator(afterLeftSquare, &operatorAmount, &afterOperator,
+							error);
 		}
-		else if (*symbol == '[')
+		else if (isSymbolLeftSquareBracket(*symbol))
 		{
-			// Если множество не за оператором
-			if (afterOperator == 0)
-			{
-				*error = ERROR_OPERATOR_WITHOUT_SETS;
-				break;
-			}
-			afterLeftSquare = true; // Последующие символы после [
-			afterOperator = 0; // Последующие символы не за оператором
-			setAmount++; // Инкремент количества множеств
-			if (circleBracketsAmount > 0)
-				squareInCircle = true; // Обнаружено множество в скобках
+			checkLeftSquareBracket(circleBracketsAmount, &afterOperator,
+							&afterLeftSquare, &squareInCircle, &setAmount,
+							error);
 		}
-		else if (*symbol == ']')
+		else if (isSymbolRightSquareBracket(*symbol))
 		{
-			// Если конец множества идёт сразу после запятой
-			if (afterComma == true)
-			{
-				*error = ERROR_COMMA_WITHOUT_NUMBER;
-				break;
-			}
-			// Если ']' идет первее '['
-			if (afterLeftSquare == 0)
-			{
-				*error = ERROR_SQUERE_END_BEFORE_START;
-				break;
-			}
-			afterLeftSquare = 0; // Дальше символы идут вне множества
+			checkRightSquareBracket(afterComma, &afterLeftSquare, error);
 		}
-		else if (*symbol == '(')
+		else if (isSymbolLeftCircleBracket(*symbol))
 		{
-			// Если круглая скобка внутри квадратной
-			if (afterLeftSquare == 1)
-			{
-				*error = ERROR_CIRCLE_IN_SQUERE;
-				break;
-			}
-			circleBracketsAmount++; // Последующие символы после (
-			squareInCircle = 0; // Скобки не содержат множеств
+			checkLeftCircleBracket(afterLeftSquare, &squareInCircle,
+							&circleBracketsAmount, error);
 		}
-		else if (*symbol == ')')
+		else if (isSymbolRightCircleBracket(*symbol))
 		{
-			// Количество скобок уменьшилось
-			circleBracketsAmount--;
-			// Если ')' идет первее '('
-			if (circleBracketsAmount < 0)
-			{
-				*error = ERROR_CIRCLE_END_BEFORE_START;
-				break;
-			}
-			// Если еще не было обьявлено ни одного множества
-			if (afterOperator == -1)
-			{
-				*error = ERROR_NO_SQUERE_IN_CIRCLE ;
-				break;
-			}
-			afterOperator = 0; // Следующее множество не за оператором
+			checkRightCircleBracket(&circleBracketsAmount, 
+									&afterOperator, error);
 		}
 		else
-		{
-			// если запрещенный символ
+		{ // если запрещенный символ
 			*error = ERROR_WRONG_SYMBOL;
-			break;;
+		}
+		if (*error != NO_ERROR)
+		{
+			break;
 		}
 	}
 	
@@ -752,19 +829,19 @@ void getAnswer(char* string)
 		circleBrackets = 0;
 		for (size_t i = 0; i < strsize; i++)
 		{
-			if (string[i] == '(')
+			if (isSymbolLeftCircleBracket(string[i]))
 			{
 				circleBrackets++;
 				begin = i;
 			}
-			else if (string[i] == ')')
+			else if (isSymbolRightCircleBracket(string[i]))
 			{
 				for (char* currentOperator = operations; 
 				*currentOperator != '\0'; currentOperator++)
 				{
 					for (char* letter = string + begin; letter < string + i; letter++)
 					{
-						if (*letter == '[')
+						if (isSymbolLeftSquareBracket(*letter))
 						{
 							first = createSet(&error);
 							if (error != NO_ERROR)
@@ -778,7 +855,7 @@ void getAnswer(char* string)
 								localBegin = letter;
 							}
 						}
-						else if (*letter == ']')
+						else if (isSymbolRightSquareBracket(*letter))
 						{
 							if (number != 0)
 							{
@@ -811,7 +888,7 @@ void getAnswer(char* string)
 								second = moveSet(first);
 							}
 						}
-						else if (*letter == ',')
+						else if (isSymbolComma(*letter))
 						{
 							if (pushToSet(first, number) != NO_ERROR)
 							{
@@ -819,16 +896,12 @@ void getAnswer(char* string)
 							}
 							number = 0;
 						}
-						else if ((*letter >= '0') &&
-							(*letter <= '9'))
+						else if (isSymbolNumber(*letter))
 						{
 							number *= 10;
 							number += (*letter - '0');
 						}
-						else if (*letter == ' ')
-						{
-							;
-						}
+						else if (isSymbolSpace(*letter)){}
 						else
 						{
 							operator = *letter;
