@@ -40,44 +40,46 @@ Memory limit:	64 M
 
 typedef char** string_ptr;
 
-size_t len(char arr[]);
+size_t get_string_length(char arr[]);
 
-size_t lowRegistr(char* arr[], const size_t arr_size, string_ptr* save);
+char downcase_letter(char letter);
 
-size_t getString(char** lineptr, size_t* n, int delimiter, FILE* stream);
+size_t downcase_text(char* arr[], const size_t arr_size, string_ptr* save);
 
-void printText(string_ptr text, const size_t kolvo);
+size_t get_string(char** lineptr, size_t* n, int delimiter, FILE* stream);
 
-void cleanText(string_ptr text, const size_t size);
+void print_text(string_ptr text, const size_t text_size);
 
-void cleanTexts(string_ptr arr, string_ptr text, size_t size);
+void clean_text(string_ptr text, const size_t text_size);
+
+void free_all_memory(string_ptr first_ptr, string_ptr second_ptr, size_t string_ptr_size);
 
 /* Загрузить строки, возвращает количество строк или
- -1, если не выделилась память */
-size_t loadText(string_ptr text);
+ 0 в случае ошибки */
+size_t load_text(string_ptr text);
 
 int main(int argc, char* argv[]) {
     string_ptr arr = (string_ptr)calloc(BUFFER_SIZE, sizeof(char*));
     if (arr == NULL) {
         return 0;
     }
-    size_t text_size = loadText(arr);
+    size_t text_size = load_text(arr);
 
-    if (text_size == ERROR) {
+    if (text_size == 0) {
         return 0;
     }
 
-    string_ptr text;
-    int lines = lowRegistr(arr, text_size, &text);
+    string_ptr text = NULL;
+    int lines = downcase_text(arr, text_size, &text);
 
-    printText(text, lines);
+    print_text(text, lines);
 
-    cleanTexts(arr, text, lines);
+    free_all_memory(arr, text, lines);
 
     return 0;
 }
 
-size_t len(char arr[]) {
+size_t get_string_length(char arr[]) {
     assert(arr != NULL);
     if (arr == NULL) {
         return 0;
@@ -89,25 +91,17 @@ size_t len(char arr[]) {
     return size;
 }
 
-char correctLetter(char letter) {
-    wchar_t letter_a_ru = L'а';
-    wchar_t letter_A_ru = L'А';
-    wchar_t letter_Ja_ru = L'Я';
-    char letter_a_en = 'a';
-    char letter_A_en = 'A';
-    char letter_Z_en = 'Z';
+char downcase_letter(char letter) {
 
     char return_symbol = letter;
 
-    if ((return_symbol >= letter_A_ru) && (return_symbol <= letter_Ja_ru)) {
-        return_symbol -= (letter_A_ru - letter_a_ru);
-    } else if ((return_symbol >= letter_A_en) && (return_symbol <= letter_Z_en)) {
-        return_symbol -= (letter_A_en - letter_a_en);
+    if ((return_symbol >= 'A') && (return_symbol <= 'Z')) {
+        return_symbol -= ('Z' - 'z');
     }
     return return_symbol;
 }
 
-size_t lowRegistr(char* arr[], const size_t arr_size, string_ptr* save) {
+size_t downcase_text(char* arr[], const size_t arr_size, string_ptr* save) {
     assert(arr != NULL);
     assert(*arr != NULL);
     assert(save != NULL);
@@ -126,26 +120,26 @@ size_t lowRegistr(char* arr[], const size_t arr_size, string_ptr* save) {
     size_t row_size = 0;
 
     for (size_t i = 0; i < arr_size; i++) {
-        row_size = len(arr[i]);
+        row_size = get_string_length(arr[i]);
 
         //Выделим память непосредственно под строки
         (*save)[i] = (char*)calloc(row_size + 1, sizeof(char));
 
         // Если не вышло
         if (!(*save)[i]) {
-            cleanText(*save, i);
+            clean_text(*save, i);
             return ERROR;
         }
 
         // Преобразование заглавных символов к прописным
         for (int j = 0; j < row_size; j++) {
-            (*save)[i][j] = correctLetter(arr[i][j]);
+            (*save)[i][j] = downcase_letter(arr[i][j]);
         }
     }
     return arr_size;
 }
 
-size_t getString(char** lineptr, size_t* n, int delimiter, FILE* stream) {
+size_t get_string(char** lineptr, size_t* n, int delimiter, FILE* stream) {
     assert(lineptr != NULL);
     assert(n != NULL);
     assert(stream != NULL);
@@ -200,14 +194,14 @@ size_t getString(char** lineptr, size_t* n, int delimiter, FILE* stream) {
     return count;
 }
 
-void printText(string_ptr text, const size_t kolvo) {
+void print_text(string_ptr text, const size_t text_size) {
     assert(text != NULL);
 
-    if ((kolvo < 0) || (text == NULL)) {
+    if ((text_size < 0) || (text == NULL)) {
         printf("[error]");
         return;
     }
-    for (size_t i = 0; i < kolvo; i++) {
+    for (size_t i = 0; i < text_size; i++) {
         if (i != 0) {
             printf("\n");
         }
@@ -215,22 +209,22 @@ void printText(string_ptr text, const size_t kolvo) {
     }
 }
 
-void cleanText(string_ptr text, const size_t size) {
-    for (size_t i = 0; i < size; i++) {
+void clean_text(string_ptr text, const size_t text_size) {
+    for (size_t i = 0; i < text_size; i++) {
         free(text[i]);
     }
     free(text);
 }
 
-void cleanTexts(string_ptr arr, string_ptr text, const size_t size) {
-    cleanText(arr, size);
-    cleanText(text, size);
+void free_all_memory(string_ptr first_ptr, string_ptr second_ptr, size_t string_ptr_size) {
+    clean_text(first_ptr, string_ptr_size);
+    clean_text(second_ptr, string_ptr_size);
 }
 
-size_t loadText(string_ptr text) {
+size_t load_text(string_ptr text) {
     assert(text != NULL);
     if (text == NULL) {
-        return ERROR;
+        return 0;
     }
 
     size_t i = 0;
@@ -238,11 +232,10 @@ size_t loadText(string_ptr text) {
     do {
         text[i] = (char*)calloc(BUFFER_SIZE, sizeof(char));
         if (text[i] == NULL) {
-            cleanText(text, i);
+            clean_text(text, i);
             i = 0;
             break;
         }
-    } while (getString(&text[i++], &max_size, '\n', stdin) != ERROR);
-    if (i == 0) return ERROR;
+    } while (get_string(&text[i++], &max_size, '\n', stdin) != ERROR);
     return i;
 }
