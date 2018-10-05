@@ -33,7 +33,8 @@ Memory limit:	64 M
 #include <assert.h>
 
 #define NO_SYMBOLS 0
-#define ERROR -1
+#define NO_ERROR 1
+#define ERROR 0
 
 #define STRING_SIZE 32
 #define LINES_COUNT 4
@@ -44,48 +45,66 @@ size_t get_string_length(char string[]);
 
 char downcase_letter(char letter);
 
-size_t downcase_text(string_ptr lines, const size_t lines_count, string_ptr* downcase_text);
+size_t downcase_lines(const string_ptr lines, const size_t lines_count, string_ptr* downcase_text);
 
-bool get_string(int delimiter, FILE* stream, size_t* n, string_ptr lineptr);
+int get_string(FILE* stream, string_ptr lineptr);
 
-void print_text(string_ptr text, const size_t text_size);
+int print_text(const string_ptr lines, const size_t lines_size);
 
-void clean_text(string_ptr text, const size_t text_size);
+void clean_input_text(string_ptr loaded_text);
 
-void free_all_memory(string_ptr first_ptr, string_ptr second_ptr, size_t string_ptr_size);
+void clean_downcase_text(string_ptr downcase_text);
 
-/* Загрузить строки, возвращает количество строк или
- 0 в случае ошибки */
-size_t load_text(string_ptr *text, int* error);
+// Загрузить строки из файла или потока ввода, возвращает количество строк
+size_t load_text(string_ptr *text, FILE* f);
 
 int main(int argc, char* argv[]) {
-    string_ptr arr = NULL; //(char**)calloc(STRING_SIZE, sizeof(char*));
-    //if (arr == NULL) {
-     //   return 0;
-    //}
-	
-	int error = 0;
-	
-    size_t text_size = load_text(&arr, &error);
 
-    if (error == ERROR) {
+	// Текст, приходящий на вход
+    string_ptr input_text = NULL;	
+	
+	// Для отладки
+	FILE *f = stdin;
+	setbuf(stdout, NULL);
+	if (argc > 1) {
+		f = fopen(argv[1], "r");
+		if (!f) {
+			printf("No file with name %s", argv[1]);
+			return 0;
+		}
+	}
+    size_t lines_count = load_text(&input_text, f);
+	if (argc > 1) {
+		fclose(f);
+	}
+	
+    string_ptr downcase_text = NULL;
+	
+	if (lines_count != ERROR)
+	{
+		lines_count = downcase_lines(input_text, lines_count, &downcase_text);
+	}
+	
+	if (lines_count != ERROR)
+	{
+		lines_count = print_text(downcase_text, lines_count);
+	}
+	
+	 if (lines_count == ERROR) {
+		printf("[error]");
         return 0;
     }
 
-    string_ptr text = NULL;
-    int lines = downcase_text(arr, text_size, &text);
-
-    print_text(text, lines);
-
-    free_all_memory(arr, text, lines);
-
+	clean_input_text(input_text);
+	clean_downcase_text(downcase_text);
     return 0;
 }
 
+// ERROR - теперь 0
 size_t get_string_length(char string[]) {
     assert(string != NULL);
     if (string == NULL) {
-        return 0;
+        return ERROR;
     }
 
     size_t size = 0;
@@ -104,7 +123,7 @@ char downcase_letter(char letter) {
     return return_symbol;
 }
 
-size_t downcase_text(string_ptr lines, const size_t lines_count,
+size_t downcase_lines(string_ptr lines, const size_t lines_count,
 						string_ptr* downcase_text) {
     assert(lines != NULL);
     assert(*lines != NULL);
@@ -122,94 +141,80 @@ size_t downcase_text(string_ptr lines, const size_t lines_count,
     if (!*downcase_text) {
         return ERROR;
     }
+	
+	int string_size = 0;
 
     for (size_t i = 0; i < lines_count; i++) {
-
-        //Выделим память непосредственно под строки
-        //(*downcase_text)[i] = (char*)calloc(STRING_SIZE, sizeof(char));
-
-        // Если не вышло
-        //if (!(*downcase_text)[i]) {
-         //   clean_text(*downcase_text, i);
-          //  return ERROR;
-        //}
+		
+		string_size = get_string_length(lines[i]);
 
         // Преобразование заглавных символов к прописным
-        for (size_t j = 0; j < strlen(lines[i]); j++) {
+        for (size_t j = 0; j < string_size; j++) {
             (*downcase_text)[i][j] = downcase_letter(lines[i][j]);
         }
     }
     return lines_count;
 }
 
-bool get_string(int delimiter, FILE* stream, size_t* n, string_ptr lineptr) {
+int get_string(FILE* stream, string_ptr lineptr) {
     assert(lineptr != NULL);
-    assert(n != NULL);
     assert(stream != NULL);
 
-    if ((lineptr == NULL) || (n == NULL) || (stream == NULL)) {
-        return false;
+    if ((lineptr == NULL) || (stream == NULL)) {
+        return ERROR;
     }
 
     size_t count = NO_SYMBOLS;
     char* pb = NULL;
     char c = 0;
 
-    //char* tmp = NULL;
-
     pb = *lineptr;
 
-    while ((c = fgetc(stream)) != EOF) {
+    while ((c = fgetc(stream)) != EOF && count != STRING_SIZE - 1) {
         *pb = c;
         pb++;
         count++;
-		if (count == STRING_SIZE - 1)
-			break;
-		if (c == delimiter) {
+		if (c == '\n') {
             break;
         }
     }
 
     if (count == NO_SYMBOLS) {
-        return false;
+        return ERROR;
     }
 
     *pb = '\0';
 
-    return true;
+    return NO_ERROR;
 }
 
-void print_text(string_ptr text, const size_t text_size) {
-    assert(text != NULL);
+int print_text(string_ptr lines, const size_t lines_count) {
+    assert(lines != NULL);
+	assert(lines_count > 0);
 
-    if ((text_size < 0) || (text == NULL)) {
-        printf("[error]");
-        return;
+    if ((lines_count == 0) || (lines == NULL)) {
+        return ERROR;
     }
-    for (size_t i = 0; i < text_size; i++) {
-        printf("%s", text[i]);
+    for (size_t i = 0; i < lines_count; i++) {
+        printf("%s", lines[i]);
     }
+	return NO_ERROR;
 }
 
-void clean_text(string_ptr text, const size_t text_size) {
-    free(text);
-}
-
-void free_all_memory(string_ptr first_ptr, string_ptr second_ptr, size_t string_ptr_size) {
-    clean_text(first_ptr, string_ptr_size);
-    clean_text(second_ptr, string_ptr_size);
-}
-
-unsigned long get_string_pointer_size(size_t size)
+void clean_input_text(string_ptr loaded_text)
 {
-	return (size * STRING_SIZE * sizeof(char));
+	free(loaded_text);
 }
 
-size_t load_text(string_ptr *lines, int* error) {
+void clean_downcase_text(string_ptr downcase_text)
+{
+	free(downcase_text);
+}
+
+size_t load_text(string_ptr *lines, FILE* stream) {
     assert(lines != NULL);
     if (lines == NULL) {
-		*error = ERROR;
-        return 0;
+        return ERROR;
     }
 	
 	size_t lines_count = LINES_COUNT;
@@ -217,34 +222,31 @@ size_t load_text(string_ptr *lines, int* error) {
 	
 	string_ptr tmp = NULL;
 	if (text == NULL) {
-		*error = ERROR;
-		return 0;
+		return ERROR;
 	}
 	
     size_t i = 0;
-    size_t max_size = STRING_SIZE;
     do {
 		if (i >= lines_count - 1) {
 			lines_count *= 2;
 			tmp = realloc(text, lines_count * STRING_SIZE * sizeof(char));
 			if (tmp == NULL) {
-				*error = ERROR;
-				clean_text(text, i);
-				i = 0;
+				clean_input_text(text);
+				i = ERROR;
 				break;
 			}
 			text = tmp;
 		}
         //text[i] = (char*)calloc(STRING_SIZE, sizeof(char));
         if (text[i] == NULL) {
-            clean_text(text, i);
-			*error = ERROR;
-            i = 0;
+            clean_input_text(text);
+            i = ERROR;
             break;
         }
-    } while (get_string('\n', stdin, &max_size, &text[i++]));
-	if (*error != ERROR) {
+    } while (get_string(stream, &text[i++]));
+	if (i != ERROR) {
 		*lines = text;
+		return --i;
 	}
-    return --i;
+    return ERROR;
 }
