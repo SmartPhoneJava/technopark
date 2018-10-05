@@ -97,7 +97,7 @@ void insert_number_in_string(int number, char *begin[]);
 void numeric_set_to_char(Numeric_set *ns, char *begin, char *end);
 
 // Проверить строку на корректность
-char *check_string(const char *string, size_t size, int *error);
+char *check_string(const char *string, int *error);
 
 // Получить ответ
 void get_answer(char *string);
@@ -112,19 +112,17 @@ int main() {
     char *buffer = NULL, *string = NULL;
     int error = NO_ERROR;
     size_t max_size = BUFFER_SIZE;
-    while (get_string(&buffer, &max_size, '\n', stdin) == NO_ERROR) {
-        if (buffer == NULL) {
-            break;
-        }
-        string = check_string(buffer, strlen(buffer), &error);
+    while (get_string(&buffer, &max_size, '\n', stdin) == NO_ERROR && error == NO_ERROR) {
+        string = check_string(buffer, &error);
         free(buffer);
-        if (string != NULL) {
+		// В случае любой ошибочной ситуации get_string не выделяет память, поэтому free
+		// выполняется только если ошибок нет
+        if (error == NO_ERROR) {
             get_answer(string);
+			free(string);
         } else {
             printf("[error]");
-            break;
         }
-        free(string);
     }
     return 0;
 }
@@ -195,12 +193,8 @@ void clear_set(Numeric_set *ns) {
 int push_to_set(Numeric_set *ns, int num) {
     assert(ns != NULL);
     assert(num > 0);
-    assert(ns->numbers != NULL);
-    assert(ns->real_size >= 0);
-    assert(ns->max_size >= 0);
 
-    if ((ns == NULL) || (num <= 0) || (ns->numbers == NULL) ||
-            (ns->real_size < 0) || (ns->max_size <= 0)) {
+    if ((ns == NULL) || (num <= 0)) {
         return WRONG_INPUT;
     }
 
@@ -252,12 +246,9 @@ void add_from_set_to_set(Numeric_set *to, const Numeric_set *from, int *error) {
         return;
     }
 
-    int size = from->real_size;
-    for (int i = 0; i < size; i++) {
+    size_t size = from->real_size;
+    for (size_t i = 0; (i < size) && (*error == NO_ERROR); i++) {
         *error = push_to_set(to, from->numbers[i]);
-        if (*error != NO_ERROR) {
-            break;
-        }
     }
 }
 
@@ -467,7 +458,7 @@ bool is_symbol_operator(char symbol) {
 }
 
 void check_number(const bool after_left_square, bool *after_comma,
-                 bool *after_number, int *error) {
+                 bool *after_number, int *error) {	
     // Если число вне скобок
     if (after_left_square == false) {
         *error = ERROR_NUMBER_NOT_IN_SET;
@@ -563,19 +554,20 @@ char* add_circle_brackets_to_string(const char* string, const size_t size, int *
 	return ret;
 }
 
-char *check_string(const char *string, size_t size, int *error) {
+char *check_string(const char *string, int *error) {
     assert(string != NULL);
     assert(error != NULL);
-    assert(size > 0);
 
     if (error == NULL) {
         return NULL;
     }
 
-    if ((string == NULL) || (size == 0)) {
+    if (string == NULL) {
         *error = WRONG_INPUT;
         return NULL;
     }
+	
+	size_t size = strlen(string);
 
     bool after_number = false;  // находится ли символ после числа
     // Находится ли множество за оператором
@@ -642,6 +634,19 @@ char *check_string(const char *string, size_t size, int *error) {
 
 Numeric_set *apply_operation(char operator, Numeric_set *first, Numeric_set *second,
                            int *error) {
+	assert(first != NULL);
+    assert(second != NULL);
+    assert(error != NULL);
+
+    if (error == NULL) {
+        return NULL;
+    }
+
+    if ((first == NULL) || (second == NULL)) {
+        *error = WRONG_INPUT;
+        return NULL;
+    }
+	
     Numeric_set *result = NULL;
     switch (operator) {
     case 'U': {
@@ -698,12 +703,9 @@ void get_answer(char *string) {
             } else if (is_symbol_right_circle_bracket(string[i])) {
                 for (char *currentOperator = operations; *currentOperator != '\0';
                         currentOperator++) {
-                    for (char *letter = string + begin; letter < string + i; letter++) {
+                    for (char *letter = string + begin; error == NO_ERROR && letter < string + i; letter++) {
                         if (is_symbol_left_square_bracket(*letter)) {
                             first = create_set(&error);
-                            if (error != NO_ERROR) {
-                                break;
-                            }
                             number = 0;
 
                             if (!(*currentOperator == operator)) {
@@ -712,37 +714,35 @@ void get_answer(char *string) {
                         } else if (is_symbol_right_square_bracket(*letter)) {
                             if (number != 0) {
                                 error = push_to_set(first, number);
-                                if (error != NO_ERROR) {
-                                    break;
-                                }
                             }
                             number = 0;
+							
+							if (error == NO_ERROR)
+							{
+								if (*currentOperator == operator) {
+									second = apply_operation(operator, first, second, &error);
+									if (error == NO_ERROR)
+									{
+										numeric_set_to_char(second, localBegin, letter);
 
-                            if (*currentOperator == operator) {
-                                second = apply_operation(operator, first, second, &error);
-                                if (error != NO_ERROR) break;
-
-                                numeric_set_to_char(second, localBegin, letter);
-
-                                operator= ' ';
-                            } else {
-                                if (second != NULL) {
-                                    clear_set(second);
-                                }
-
-                                second = move_set(first);
-                            }
+										operator = ' ';
+									}
+								} else {
+									if (second != NULL) {
+										clear_set(second);
+									}
+									second = move_set(first);
+								}
+							}
                         } else if (is_symbol_comma(*letter)) {
-                            if (push_to_set(first, number) != NO_ERROR) {
-                                break;
-                            }
+                            push_to_set(first, number);
                             number = 0;
                         } else if (is_symbol_number(*letter)) {
                             number *= 10;
                             number += (*letter - '0');
                         } else if (is_symbol_space(*letter)) {
                         } else {
-                            operator= *letter;
+                            operator = *letter;
                         }
                     }
                 }
@@ -770,107 +770,93 @@ void printResult(int real_error, int my_error, char *string, char *name) {
 void case_error1() {
     char *stroka = "(";
     int error = NO_ERROR;
-    int strsize = strlen(stroka);
-    char *string = check_string(stroka, strsize, &error);
+    char *string = check_string(stroka, &error);
     printResult(ERROR_NO_CIRCLE_END, error, string, stroka);
 }
 
 void case_error2() {
     char *stroka = "()";
     int error = NO_ERROR;
-    int strsize = strlen(stroka);
-    char *string = check_string(stroka, strsize, &error);
+    char *string = check_string(stroka, &error);
     printResult(ERROR_NO_SQUERE_IN_CIRCLE, error, string, stroka);
 }
 
 void case_error3() {
     char *stroka = "[1,2,3,]";
     int error = NO_ERROR;
-    int strsize = strlen(stroka);
-    char *string = check_string(stroka, strsize, &error);
+    char *string = check_string(stroka, &error);
     printResult(ERROR_COMMA_WITHOUT_NUMBER, error, string, stroka);
 }
 
 void case_error4() {
     char *stroka = "[1,,3]";
     int error = NO_ERROR;
-    int strsize = strlen(stroka);
-    char *string = check_string(stroka, strsize, &error);
+    char *string = check_string(stroka, &error);
     printResult(ERROR_COMMA_NOT_AFTER_NUMBER, error, string, stroka);
 }
 
 void case_error5() {
     char *stroka = "[1]3";
     int error = NO_ERROR;
-    int strsize = strlen(stroka);
-    char *string = check_string(stroka, strsize, &error);
+    char *string = check_string(stroka, &error);
     printResult(ERROR_NUMBER_NOT_IN_SET, error, string, stroka);
 }
 
 void case_error6() {
     char *stroka = "[1]()";
     int error = NO_ERROR;
-    int strsize = strlen(stroka);
-    char *string = check_string(stroka, strsize, &error);
+    char *string = check_string(stroka, &error);
     printResult(ERROR_NO_SQUERE_IN_CIRCLE, error, string, stroka);
 }
 
 void case_error7() {
     char *stroka = "()[1]";
     int error = NO_ERROR;
-    int strsize = strlen(stroka);
-    char *string = check_string(stroka, strsize, &error);
+    char *string = check_string(stroka, &error);
     printResult(ERROR_NO_SQUERE_IN_CIRCLE, error, string, stroka);
 }
 
 void case_error8() {
     char *stroka = "[[1]]";
     int error = NO_ERROR;
-    int strsize = strlen(stroka);
-    char *string = check_string(stroka, strsize, &error);
+    char *string = check_string(stroka, &error);
     printResult(ERROR_OPERATOR_WITHOUT_SETS, error, string, stroka);
 }
 
 void case_error9() {
     char *stroka = "[[1] U]";
     int error = NO_ERROR;
-    int strsize = strlen(stroka);
-    char *string = check_string(stroka, strsize, &error);
+    char *string = check_string(stroka, &error);
     printResult(ERROR_OPERATOR_WITHOUT_SETS, error, string, stroka);
 }
 void case_error10() {
     char *stroka = "[1,2,3,4";
     int error = NO_ERROR;
-    int strsize = strlen(stroka);
-    char *string = check_string(stroka, strsize, &error);
+    char *string = check_string(stroka, &error);
     printResult(ERROR_NO_SQUERE_END, error, string, stroka);
 }
 void case_error11() {
     char *stroka = "[1,2,3,4] U][";
     int error = NO_ERROR;
-    int strsize = strlen(stroka);
-    char *string = check_string(stroka, strsize, &error);
+    char *string = check_string(stroka, &error);
     printResult(ERROR_SQUERE_END_BEFORE_START, error, string, stroka);
 }
 void case_error12() {
     char *stroka = "([1,2,3,4] U))U([])";
     int error = NO_ERROR;
-    int strsize = strlen(stroka);
-    char *string = check_string(stroka, strsize, &error);
+    char *string = check_string(stroka, &error);
     printResult(ERROR_CIRCLE_END_BEFORE_START, error, string, stroka);
 }
 void case_error13() {
     char *stroka = "([1,2,3,4] U)[]";
     int error = NO_ERROR;
-    int strsize = strlen(stroka);
-    char *string = check_string(stroka, strsize, &error);
+    char *string = check_string(stroka, &error);
     printResult(ERROR_OPERATOR_WITHOUT_SETS, error, string, stroka);
 }
 void case_error14() {
     char *stroka = "     ";
     int error = NO_ERROR;
-    int strsize = strlen(stroka);
-    char *string = check_string(stroka, strsize, &error);
+    char *string = check_string(stroka, &error);
     printResult(ERROR_WRONG_NUMBER_OF_OPERATORS, error, string, stroka);
 }
 
@@ -895,36 +881,31 @@ void error_tests() {
 void case_right5() {
     char *stroka = "([]U([]\\([])^([] ^   ([] U []))))";
     int error = NO_ERROR;
-    int strsize = strlen(stroka);
-    char *string = check_string(stroka, strsize, &error);
+    char *string = check_string(stroka, &error);
     printResult(NO_ERROR, error, string, stroka);
 }
 void case_right6() {
     char *stroka = "([1])";
     int error = NO_ERROR;
-    int strsize = strlen(stroka);
-    char *string = check_string(stroka, strsize, &error);
+    char *string = check_string(stroka, &error);
     printResult(NO_ERROR, error, string, stroka);
 }
 void case_right7() {
     char *stroka = "(([1]))";
     int error = NO_ERROR;
-    int strsize = strlen(stroka);
-    char *string = check_string(stroka, strsize, &error);
+    char *string = check_string(stroka, &error);
     printResult(NO_ERROR, error, string, stroka);
 }
 void case_right8() {
     char *stroka = "[]U[]";
     int error = NO_ERROR;
-    int strsize = strlen(stroka);
-    char *string = check_string(stroka, strsize, &error);
+    char *string = check_string(stroka, &error);
     printResult(NO_ERROR, error, string, stroka);
 }
 void case_right9() {
     char *stroka = "([])U([])";
     int error = NO_ERROR;
-    int strsize = strlen(stroka);
-    char *string = check_string(stroka, strsize, &error);
+    char *string = check_string(stroka, &error);
     printResult(NO_ERROR, error, string, stroka);
 }
 
