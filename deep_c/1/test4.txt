@@ -1,0 +1,4 @@
+A + B = C
+a - b = c
+A*B=C
+A\b=C
