@@ -58,11 +58,7 @@ void clean_downcase_text(string_ptr downcase_text);
 // Загрузить строки из файла или потока ввода, возвращает количество строк
 size_t load_text(string_ptr *text, FILE* f);
 
-int main(int argc, char* argv[]) {
-
-	// Текст, приходящий на вход
-    string_ptr input_text = NULL;	
-	
+int main(int argc, char* argv[]) {	
 	// Для отладки
 	FILE *f = stdin;
 	setbuf(stdout, NULL);
@@ -73,6 +69,8 @@ int main(int argc, char* argv[]) {
 			return 0;
 		}
 	}
+	// Текст, приходящий на вход. Память выделяется в load_text()
+    string_ptr input_text = NULL;	
     size_t lines_count = load_text(&input_text, f);
 	if (argc > 1) {
 		fclose(f);
@@ -237,13 +235,13 @@ size_t load_text(string_ptr *lines, FILE* stream) {
 			}
 			text = tmp;
 		}
-        //text[i] = (char*)calloc(STRING_SIZE, sizeof(char));
         if (text[i] == NULL) {
             clean_input_text(text);
             i = ERROR;
             break;
         }
-    } while (get_string(stream, &text[i++]));
+		i++;
+    } while (get_string(stream, &text[i]));
 	if (i != ERROR) {
 		*lines = text;
 		return --i;
