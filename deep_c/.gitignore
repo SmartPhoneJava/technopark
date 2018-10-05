@@ -1,3 +1,5 @@
 *.o
 *.exe
 *.pro
+*.pro.user
+*.sln
