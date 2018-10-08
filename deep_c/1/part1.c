@@ -57,27 +57,25 @@ void clean_input_text(string_ptr loaded_text);
 void clean_downcase_text(string_ptr downcase_text);
 
 // Загрузить строки из файла или потока ввода, возвращает наличие ошибок
-int load_text(FILE* stream, string_ptr *lines, size_t *lines_count);
+int load_text(FILE* stream, string_ptr *blocks, size_t *blocks_count);
 
 int main() {	
 	// Текст, приходящий на вход. Память выделяется в load_text()
 	string_ptr input_text = NULL;	
 	size_t lines_count = 0;
-	load_text(stdin, &input_text, &lines_count);
 	
 	string_ptr downcase_text = NULL;
 	
 	int error = load_text(stdin, &input_text, &lines_count);
-	
 	if (error != ERROR) {
 		lines_count = downcase_lines(input_text, lines_count, &downcase_text);
 	}
 	
 	if (lines_count != ERROR) {
-		lines_count = print_text(downcase_text, lines_count);
+		error = print_text(downcase_text, lines_count);
 	}
 	
-	if (lines_count == ERROR) {
+	if (error == ERROR) {
 		printf("[error]");
 		return 0;
 	}
@@ -121,8 +119,7 @@ size_t downcase_lines(string_ptr lines, const size_t lines_count,
 	}
 
 	// выделим память под массив строк
-	*downcase_text = (string_ptr)calloc(lines_count * STRING_SIZE, sizeof(char)
-						);
+	*downcase_text = (string_ptr)calloc(lines_count * STRING_SIZE, sizeof(char));
 
 	if (!*downcase_text) {
 		return ERROR;
@@ -197,40 +194,40 @@ void clean_downcase_text(string_ptr downcase_text)
 	free(downcase_text);
 }
 
-int load_text(FILE* stream, string_ptr *lines, size_t *lines_count) {
-	assert(lines != NULL);
+int load_text(FILE* stream, string_ptr *blocks, size_t *blocks_count) {
+	assert(blocks != NULL);
 	assert(stream != NULL);
-	assert(lines_count != NULL);
-	if ((lines == NULL) || (stream == NULL) || (lines_count == NULL)) {
+	assert(blocks_count != NULL);
+	if ((blocks == NULL) || (stream == NULL) || (blocks_count == NULL)) {
 		return ERROR;
 	}
 	
 	size_t max_lines_count = LINES_COUNT;
-	*lines = (string_ptr)calloc(max_lines_count * STRING_SIZE, sizeof(char));
+	*blocks = (string_ptr)calloc(max_lines_count * STRING_SIZE, sizeof(char));
 	
-	if (*lines == NULL) {
+	if (*blocks == NULL) {
 		return ERROR;
 	}
 	
 	string_ptr tmp = NULL;
 	size_t i = 0;
 	int error = NO_ERROR;
-	while (get_string(stream, &((*lines)[i])) && error == NO_ERROR)
+	while (get_string(stream, &((*blocks)[i])) && error == NO_ERROR)
 	{
 		i++;
 		if (i >= max_lines_count - 1) {
 			max_lines_count *= 2;
-			tmp = realloc(*lines, max_lines_count * STRING_SIZE * sizeof(char));
+			tmp = realloc(*blocks, max_lines_count * STRING_SIZE * sizeof(char));
 			if (tmp == NULL) {
 				error = ERROR;
 			} else {
-				*lines = tmp;
+				*blocks = tmp;
 			}
 		}
 	}
-	*lines_count = i;
+	*blocks_count = i;
 	if (error == ERROR) {
-		clean_input_text(*lines);
+		clean_input_text(*blocks);
 	}
-	return ERROR;
+	return error;
 }
