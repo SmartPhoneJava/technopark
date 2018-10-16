@@ -224,10 +224,11 @@ int set_add(Numeric_set *ns, int num) {
 	// Если числовое множество полностью заполнилось
 	if (rsize >= ns->max_size) {
 		ns->max_size *= 2;
-		ns->numbers = (int *)realloc(ns->numbers, ns->max_size * sizeof(int));
-		if (ns->numbers == NULL) {
+		int* buffer = (int *)realloc(ns->numbers, ns->max_size * sizeof(int));
+		if (buffer == NULL) {
 			return MEMORY_ERROR;
 		}
+		ns->numbers = buffer;
 	}
 	for (size_t i = 0; i < rsize; i++) {
 		if (num == ns->numbers[i]) {
