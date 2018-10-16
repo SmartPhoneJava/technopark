@@ -94,13 +94,16 @@ void insert_number_in_string(int number, char *begin[]);
 void numeric_set_to_char(numericSet_t *ns, char *begin, char *end);
 
 // Проверить строку на корректность
-int check_string(const char *string);
+int check_string(const char string[]);
 
 // Проверить строку на корректность
-char* add_circle_brackets_to_string(const char* string, int *error);
+char* add_circle_brackets_to_string(const char string[], int *error);
 
 // Получить ответ
-void get_answer(char *string);
+int get_answer(char string[]);
+
+// Распечатать строку без пробелов
+void print_without_spaces(const char string[]);
 
 void unit_tests();
 
@@ -120,7 +123,12 @@ int main() {
 			char *string = add_circle_brackets_to_string(buffer, &error);
 			if (error == NO_ERROR)
 			{
-				get_answer(string);
+				error = get_answer(string);
+				if (error != NO_ERROR) {
+					printf("[error]");
+				} else {
+					print_without_spaces(string);
+				}
 				free(buffer);
 				free(string);
 			}
@@ -779,17 +787,14 @@ bool find_circle_brackets(char string[], size_t string_size,
 	return true;
 }
 
-void get_answer(char *string) {
+int get_answer(char string[]) {
 	assert(string != NULL);
 
 	if (string == NULL) {
-		return;
+		return WRONG_INPUT;
 	}
 
 	int strsize = strlen(string);
-
-	int begin = 0;
-
 	int error = NO_ERROR;
 
 	// Возможные операции
@@ -799,31 +804,22 @@ void get_answer(char *string) {
 
 	while (find_circle_brackets(string, strsize,
 								&left_circle, &right_circle)) {
-		for (size_t i = 0; i < strsize; i++) {
-			if (is_symbol_left_circle_bracket(string[i])) {
-				begin = i;
-			} else if (is_symbol_right_circle_bracket(string[i])) {
-				for (char *currentOperator = operations;
-					*currentOperator != '\0' && error == NO_ERROR;
-						currentOperator++) {
-					error = calculate_sets_in_string(string, left_circle,
-											right_circle,
-											*currentOperator);
-				}
-				*(string + begin) = ' ';
-				*(string + i) = ' ';
-				break;
-			}
+		
+		for (char *currentOperator = operations;
+			*currentOperator != '\0' && error == NO_ERROR;
+				currentOperator++) {
+			error = calculate_sets_in_string(string, left_circle,
+									right_circle,
+									*currentOperator);
 		}
+		*left_circle = ' ';
+		*right_circle = ' ';
 	}
-	if (error != NO_ERROR) {
-		printf("[error]");
-	} else {
-		print_without_spaces(string);
-	}
+	
+	return error;
 }
 
-void print_result(int real_error, int my_error, char *name) {
+void print_result_of_unit_test(int real_error, int my_error, char *name) {
 	printf("\n %s", name);
 	if (real_error == my_error)
 		printf(" OK");
@@ -834,80 +830,80 @@ void print_result(int real_error, int my_error, char *name) {
 void case_error1() {
 	char *string = "(";
 	int error = check_string(string);
-	print_result(ERROR_NO_CIRCLE_END, error, string);
+	print_result_of_unit_test(ERROR_NO_CIRCLE_END, error, string);
 }
 
 void case_error2() {
 	char *string = "()";
 	int error = check_string(string);
-	print_result(ERROR_NO_SQUERE_IN_CIRCLE, error, string);
+	print_result_of_unit_test(ERROR_NO_SQUERE_IN_CIRCLE, error, string);
 }
 
 void case_error3() {
 	char *string = "[1,2,3,]";
 	int error = check_string(string);
-	print_result(ERROR_COMMA_WITHOUT_NUMBER, error, string);
+	print_result_of_unit_test(ERROR_COMMA_WITHOUT_NUMBER, error, string);
 }
 
 void case_error4() {
 	char *string = "[1,,3]";
 	int error = check_string(string);
-	print_result(ERROR_COMMA_NOT_AFTER_NUMBER, error, string);
+	print_result_of_unit_test(ERROR_COMMA_NOT_AFTER_NUMBER, error, string);
 }
 
 void case_error5() {
 	char *string = "[1]3";
 	int error = check_string(string);
-	print_result(ERROR_NUMBER_NOT_IN_SET, error, string);
+	print_result_of_unit_test(ERROR_NUMBER_NOT_IN_SET, error, string);
 }
 
 void case_error6() {
 	char *string = "[1]()";
 	int error = check_string(string);
-	print_result(ERROR_NO_SQUERE_IN_CIRCLE, error, string);
+	print_result_of_unit_test(ERROR_NO_SQUERE_IN_CIRCLE, error, string);
 }
 
 void case_error7() {
 	char *string = "()[1]";
 	int error = check_string(string);
-	print_result(ERROR_NO_SQUERE_IN_CIRCLE, error, string);
+	print_result_of_unit_test(ERROR_NO_SQUERE_IN_CIRCLE, error, string);
 }
 
 void case_error8() {
 	char *string = "[[1]]";
 	int error = check_string(string);
-	print_result(ERROR_OPERATOR_WITHOUT_SETS, error, string);
+	print_result_of_unit_test(ERROR_OPERATOR_WITHOUT_SETS, error, string);
 }
 
 void case_error9() {
 	char *string = "[[1] U]";
 	int error = check_string(string);
-	print_result(ERROR_OPERATOR_WITHOUT_SETS, error, string);
+	print_result_of_unit_test(ERROR_OPERATOR_WITHOUT_SETS, error, string);
 }
 void case_error10() {
 	char *string = "[1,2,3,4";
 	int error = check_string(string);
-	print_result(ERROR_NO_SQUERE_END, error, string);
+	print_result_of_unit_test(ERROR_NO_SQUERE_END, error, string);
 }
 void case_error11() {
 	char *string = "[1,2,3,4] U][";
 	int error = check_string(string);
-	print_result(ERROR_SQUERE_END_BEFORE_START, error, string);
+	print_result_of_unit_test(ERROR_SQUERE_END_BEFORE_START, error, string);
 }
 void case_error12() {
 	char *string = "([1,2,3,4] U))U([])";
 	int error = check_string(string);
-	print_result(ERROR_CIRCLE_END_BEFORE_START, error, string);
+	print_result_of_unit_test(ERROR_CIRCLE_END_BEFORE_START, error, string);
 }
 void case_error13() {
 	char *string = "([1,2,3,4] U)[]";
 	int error = check_string(string);
-	print_result(ERROR_OPERATOR_WITHOUT_SETS, error, string);
+	print_result_of_unit_test(ERROR_OPERATOR_WITHOUT_SETS, error, string);
 }
 void case_error14() {
 	char *string = "     ";
 	int error = check_string(string);
-	print_result(ERROR_WRONG_NUMBER_OF_OPERATORS, error, string);
+	print_result_of_unit_test(ERROR_WRONG_NUMBER_OF_OPERATORS, error, string);
 }
 
 void error_tests() {
@@ -931,33 +927,33 @@ void error_tests() {
 void case_right4() {
 	char *string = "([3,4] U [2])";
 	int error = check_string(string);
-	print_result(NO_ERROR, error, string);
+	print_result_of_unit_test(NO_ERROR, error, string);
 }
 
 void case_right5() {
 	char *string = "([]U([]\\([])^([] ^   ([] U []))))";
 	int error = check_string(string);
-	print_result(NO_ERROR, error, string);
+	print_result_of_unit_test(NO_ERROR, error, string);
 }
 void case_right6() {
 	char *string = "([1])";
 	int error = check_string(string);
-	print_result(NO_ERROR, error, string);
+	print_result_of_unit_test(NO_ERROR, error, string);
 }
 void case_right7() {
 	char *string = "(([1]))";
 	int error = check_string(string);
-	print_result(NO_ERROR, error, string);
+	print_result_of_unit_test(NO_ERROR, error, string);
 }
 void case_right8() {
 	char *string = "[]U[]";
 	int error = check_string(string);
-	print_result(NO_ERROR, error, string);
+	print_result_of_unit_test(NO_ERROR, error, string);
 }
 void case_right9() {
 	char *string = "([])U([])";
 	int error = check_string(string);
-	print_result(NO_ERROR, error, string);
+	print_result_of_unit_test(NO_ERROR, error, string);
 }
 
 void right_tests() {
