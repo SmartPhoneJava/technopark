@@ -61,22 +61,22 @@ typedef struct Numeric_set {
 void swap(int *a, int *b);
 
 // Печатать множество
-void print_set(const Numeric_set *ns);
+void set_print(const Numeric_set *ns);
 
 // Создать множество
-Numeric_set *create_set(int *error);
+Numeric_set *set_create(int *error);
 
 // Очистить множество
-void clear_set(Numeric_set *ns);
+void set_clear(Numeric_set *ns);
 
 // Добавить элемент в множество
-int push_to_set(Numeric_set *ns, int num);
+int set_add(Numeric_set *ns, int num);
 
 // Добавить в множество to элементы из множества for
-void add_from_set_to_set(Numeric_set *to, const Numeric_set *from, int *error);
+void set_add_from_set(Numeric_set *to, const Numeric_set *from, int *error);
 
 // Переместить множество
-Numeric_set *move_set(Numeric_set *from);
+Numeric_set *set_move(Numeric_set *from);
 
 // Получить пересечение множеств(с очисткой)
 Numeric_set *get_union_of_sets(Numeric_set *A, Numeric_set *B, int *error);
@@ -140,7 +140,7 @@ void swap(int *a, int *b) {
     *b = tmp;
 }
 
-void print_set(const Numeric_set *ns) {
+void set_print(const Numeric_set *ns) {
     assert(ns != NULL);
 
     if (ns == NULL) {
@@ -159,7 +159,7 @@ void print_set(const Numeric_set *ns) {
     printf("]");
 }
 
-Numeric_set *create_set(int *error) {
+Numeric_set *set_create(int *error) {
     assert(error != NULL);
 
     if (error == NULL) {
@@ -183,14 +183,14 @@ Numeric_set *create_set(int *error) {
     return ns;
 }
 
-void clear_set(Numeric_set *ns) {
+void set_clear(Numeric_set *ns) {
     if (ns != NULL) {
         free(ns->numbers);
         free(ns);
     }
 }
 
-int push_to_set(Numeric_set *ns, int num) {
+int set_add(Numeric_set *ns, int num) {
     assert(ns != NULL);
     assert(num > 0);
 
@@ -232,7 +232,7 @@ int push_to_set(Numeric_set *ns, int num) {
     return NO_ERROR;
 }
 
-void add_from_set_to_set(Numeric_set *to, const Numeric_set *from, int *error) {
+void set_add_from_set(Numeric_set *to, const Numeric_set *from, int *error) {
     assert(to != NULL);
     assert(from != NULL);
     assert(error != NULL);
@@ -248,11 +248,11 @@ void add_from_set_to_set(Numeric_set *to, const Numeric_set *from, int *error) {
 
     size_t size = from->real_size;
     for (size_t i = 0; (i < size) && (*error == NO_ERROR); i++) {
-        *error = push_to_set(to, from->numbers[i]);
+        *error = set_add(to, from->numbers[i]);
     }
 }
 
-Numeric_set *move_set(Numeric_set *from) {
+Numeric_set *set_move(Numeric_set *from) {
     Numeric_set *ret = from;
     from = NULL;
     return ret;
@@ -272,14 +272,14 @@ Numeric_set *get_union_of_sets(Numeric_set *A, Numeric_set *B, int *error) {
         return NULL;
     }
 
-    Numeric_set *ret = create_set(error);
+    Numeric_set *ret = set_create(error);
     if (*error != NO_ERROR) {
         return NULL;
     }
-    add_from_set_to_set(ret, A, error);
-    add_from_set_to_set(ret, B, error);
-    clear_set(A);
-    clear_set(B);
+    set_add_from_set(ret, A, error);
+    set_add_from_set(ret, B, error);
+    set_clear(A);
+    set_clear(B);
     return ret;
 }
 
@@ -299,7 +299,7 @@ Numeric_set *get_intersection_of_sets(Numeric_set *A, Numeric_set *B, int *error
 
 	// Проверка error не требуется, поскольку цикл ниже
 	// имеет условие *error == NO_ERROR
-    Numeric_set *ret = create_set(error);
+    Numeric_set *ret = set_create(error);
 
     size_t sizeA = A->real_size, sizeB = B->real_size;
     size_t iA = 0, iB = 0;
@@ -310,19 +310,19 @@ Numeric_set *get_intersection_of_sets(Numeric_set *A, Numeric_set *B, int *error
         } else if (A->numbers[iA] > B->numbers[iB]) {
             iB++;
         } else {
-			*error = push_to_set(ret, A->numbers[iA]);
+			*error = set_add(ret, A->numbers[iA]);
 			iB++;
 			iA++;
 		}
     }
 	
 	if (*error != NO_ERROR) {
-		clear_set(ret);
+		set_clear(ret);
 		return NULL;
 	}
 
-    clear_set(A);
-    clear_set(B);
+    set_clear(A);
+    set_clear(B);
     return ret;
 }
 
@@ -343,13 +343,13 @@ Numeric_set *get_subtraction_of_sets(Numeric_set *A, Numeric_set *B, int *error)
 	size_t sizeA = A->real_size, sizeB = B->real_size;
     size_t iA = 0, iB = 0;
 	
-    Numeric_set *ret = create_set(error);
+    Numeric_set *ret = set_create(error);
 
     while ((iA < sizeA) && (iB < sizeB) && (*error == NO_ERROR)) {
         if (A->numbers[iA] < B->numbers[iB]) {
             iA++;
         } else if (A->numbers[iA] > B->numbers[iB]) {
-            *error = push_to_set(ret, B->numbers[iB]);
+            *error = set_add(ret, B->numbers[iB]);
             iB++;
         } else {
 			iB++;
@@ -360,17 +360,17 @@ Numeric_set *get_subtraction_of_sets(Numeric_set *A, Numeric_set *B, int *error)
     // Если не все элементы из множества B успели залететь
     // Например если размер B гораздо больше А
     while ((iB < sizeB) && (*error == NO_ERROR)) {
-        *error = push_to_set(ret, A->numbers[iB]);
+        *error = set_add(ret, A->numbers[iB]);
         iB++;
     }
 	
 	if (*error != NO_ERROR) {
-		clear_set(ret);
+		set_clear(ret);
 		return NULL;
 	}
 
-    clear_set(A);
-    clear_set(B);
+    set_clear(A);
+    set_clear(B);
     return ret;
 }
 
@@ -663,8 +663,8 @@ Numeric_set *apply_operation(char operator, Numeric_set *first, Numeric_set *sec
     }
     default: {
         *error = ERROR_WRONG_SYMBOL;
-        clear_set(first);
-        clear_set(second);
+        set_clear(first);
+        set_clear(second);
     }
     }
     return result;
@@ -705,7 +705,7 @@ void get_answer(char *string) {
                         currentOperator++) {
                     for (char *letter = string + begin; error == NO_ERROR && letter < string + i; letter++) {
                         if (is_symbol_left_square_bracket(*letter)) {
-                            first = create_set(&error);
+                            first = set_create(&error);
                             number = 0;
 
                             if (!(*currentOperator == operator)) {
@@ -713,7 +713,7 @@ void get_answer(char *string) {
                             }
                         } else if (is_symbol_right_square_bracket(*letter)) {
                             if (number != 0) {
-                                error = push_to_set(first, number);
+                                error = set_add(first, number);
                             }
                             number = 0;
 							
@@ -729,13 +729,13 @@ void get_answer(char *string) {
 									}
 								} else {
 									if (second != NULL) {
-										clear_set(second);
+										set_clear(second);
 									}
-									second = move_set(first);
+									second = set_move(first);
 								}
 							}
                         } else if (is_symbol_comma(*letter)) {
-                            push_to_set(first, number);
+                            set_add(first, number);
                             number = 0;
                         } else if (is_symbol_number(*letter)) {
                             number *= 10;
@@ -754,9 +754,9 @@ void get_answer(char *string) {
     if (error != NO_ERROR) {
         printf("[error]");
     } else {
-        print_set(second);
+        set_print(second);
     }
-    clear_set(second);
+    set_clear(second);
 }
 
 void printResult(int real_error, int my_error, char *string, char *name) {
