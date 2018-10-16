@@ -75,9 +75,6 @@ int set_add(Numeric_set *ns, int num);
 // Добавить в множество to элементы из множества for
 void set_add_from_set(const Numeric_set *from, Numeric_set *to, int *error);
 
-// Переместить множество
-Numeric_set *set_move(Numeric_set *from);
-
 // Получить пересечение множеств(с очисткой)
 Numeric_set *get_union_of_sets(Numeric_set *A, Numeric_set *B, int *error);
 
@@ -265,12 +262,6 @@ void set_add_from_set(const Numeric_set *from, Numeric_set *to, int *error) {
 	for (size_t i = 0; (i < size) && (*error == NO_ERROR); i++) {
 		*error = set_add(to, from->numbers[i]);
 	}
-}
-
-Numeric_set *set_move(Numeric_set *from) {
-	Numeric_set *ret = from;
-	from = NULL;
-	return ret;
 }
 
 Numeric_set *get_union_of_sets(Numeric_set *A, Numeric_set *B, int *error) {
@@ -749,7 +740,8 @@ void get_answer(char *string) {
 									if (second != NULL) {
 										set_clear(second);
 									}
-									second = set_move(first);
+									second = first;
+									first = NULL;
 								}
 							}
 						} else if (is_symbol_comma(*letter)) {
