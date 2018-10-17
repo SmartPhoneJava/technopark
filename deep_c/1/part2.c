@@ -96,11 +96,13 @@ void numeric_set_to_char(numericSet_t *ns, char *begin, char *end);
 // Проверить строку на корректность
 int check_string(const char string[]);
 
-// Проверить строку на корректность
-char* add_circle_brackets_to_string(const char string[], int *error);
+// Возвращает строку, содержащую текст приходящей строки, обернутый
+// в круглые скобки
+int add_circle_brackets_to_string(char** string);
 
-// Получить ответ
-int get_answer(char string[]);
+// Преобразует строку с несколькими множествами в строку с одним множеством
+// В случае неудачи возвращает код ошибки, иначе NO_ERROR
+int merge_all_sets_in_string_into_one(char string[]);
 
 // Распечатать строку без пробелов
 void print_without_spaces(const char string[]);
@@ -115,25 +117,18 @@ int main() {
 	char *buffer = NULL;
 	int error = NO_ERROR;
 	size_t max_size = BUFFER_SIZE;
-	// В случае любой ошибочной ситуации get_string не выделяет память,
-	// поэтому free выполняется только если ошибок нет
 	while (get_string(&buffer, &max_size, '\n', stdin) == NO_ERROR && error == NO_ERROR) {
 		error = check_string(buffer);
 		if (error == NO_ERROR) {
-			char *string = add_circle_brackets_to_string(buffer, &error);
-			if (error == NO_ERROR)
-			{
-				error = get_answer(string);
+			error = add_circle_brackets_to_string(&buffer);
+			if (error == NO_ERROR) {
+				error = merge_all_sets_in_string_into_one(buffer);
 				if (error != NO_ERROR) {
 					printf("[error]");
 				} else {
-					print_without_spaces(string);
+					print_without_spaces(buffer);
 				}
-				free(buffer);
-				free(string);
-			}
-			else
-			{
+			} else {
 				printf("[error]");
 				break;
 			}
@@ -141,6 +136,7 @@ int main() {
 			printf("[error]");
 			break;
 		}
+		free(buffer);
 	}
 	
 	return 0;
@@ -564,20 +560,22 @@ size_t get_string_size(const char string[])
 	return size;
 }
 
-char* add_circle_brackets_to_string(const char* string,
-							int *error) {
-	size_t size = get_string_size(string);
-	char *ret = (char*)calloc(size + 2, sizeof(numericSet_t *));
-	if (!ret) {
-		*error = MEMORY_ERROR;
-		return NULL;
+int add_circle_brackets_to_string(char** string) {
+	size_t size = get_string_size(*string);
+	
+	char* tmp = realloc(*string, size + 2);
+	if (!tmp) {
+		return MEMORY_ERROR;
 	}
-	 ret[0] = '(';
-	ret[size + 1] = ')';
-	for (size_t i = 0; i < size; i++) {
-		ret[i + 1] = string[i];
+	*string = tmp;
+	
+	for (size_t i = size; i > 0; i--) {
+		(*string)[i] = (*string)[i - 1];
 	}
-	return ret;
+	(*string)[0] = '(';
+	(*string)[size + 1] = ')';
+	
+	return NO_ERROR;
 }
 
 int check_string(const char *string) {
@@ -787,7 +785,9 @@ bool find_circle_brackets(char string[], size_t string_size,
 	return true;
 }
 
-int get_answer(char string[]) {
+// Преобразует строку с несколькими множествами в строку с одним множеством
+// В случае неудачи возвращает код ошибки, иначе NO_ERROR
+int merge_all_sets_in_string_into_one(char string[]) {
 	assert(string != NULL);
 
 	if (string == NULL) {
