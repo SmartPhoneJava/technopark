@@ -120,32 +120,37 @@ void unit_tests();
 int get_string(char **lineptr, size_t *n, int delimiter, FILE *stream);
 
 int main() {
-	//unit_tests();
 	
-	char *buffer = NULL;
-	int error = NO_ERROR;
-	size_t max_size = BUFFER_SIZE;
-	while (get_string(&buffer, &max_size, '\n', stdin) == NO_ERROR &&
-				error == NO_ERROR) {
-		error = check_string(buffer);
-		if (error == NO_ERROR) {
-			error = add_circle_brackets_to_string(&buffer);
+	//gcc -o main.exe part2.c -D _DEBUG
+	#ifdef _DEBUG
+         unit_tests();
+    #else
+		char *buffer = NULL;
+		int error = NO_ERROR;
+		size_t max_size = BUFFER_SIZE;
+		while (get_string(&buffer, &max_size, '\n', stdin) == NO_ERROR) {
+			error = check_string(buffer);
 			if (error == NO_ERROR) {
-				error = merge_all_sets_in_string_into_one(buffer);
-				if (error != NO_ERROR) {
-					printf("[error]");
+				error = add_circle_brackets_to_string(&buffer);
+				if (error == NO_ERROR) {
+					error = merge_all_sets_in_string_into_one(buffer);
+					if (error != NO_ERROR) {
+						printf("[error]");
+					} else {
+						print_without_spaces(buffer);
+					}
 				} else {
-					print_without_spaces(buffer);
+					printf("[error]");
 				}
 			} else {
 				printf("[error]");
 			}
-		} else {
-			printf("[error]");
+			
+			free(buffer);
+			buffer = NULL; // Чтобы при последующем считывании get_string
+			// увидел, что строка пуста и необходимо выделить память
 		}
-		free(buffer);
-	}
-	
+	#endif
 	return 0;
 }
 
@@ -560,7 +565,7 @@ int add_circle_brackets_to_string(char* string[]) {
 	assert(string != NULL);
 	assert(*string != NULL);
 	
-	if (string == NULL) || (*string == NULL){
+	if ((string == NULL) || (*string == NULL)){
 		return WRONG_INPUT;
 	}
 	
@@ -1067,11 +1072,12 @@ int get_string(char **lineptr, size_t *n, int delimiter, FILE *stream) {
 	assert(lineptr != NULL);
 	assert(n != NULL);
 	assert(stream != NULL);
-
+	
 	if ((lineptr == NULL) || (n == NULL) || (stream == NULL)) {
 		return WRONG_INPUT;
 	}
-
+	
+	*n = 100;
 	size_t count = 0;
 	char *pb = NULL;
 	char c = 0;
