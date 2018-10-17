@@ -96,9 +96,10 @@ void numeric_set_to_char(numericSet_t *ns, char *begin, char *end);
 // Проверить строку на корректность
 int check_string(const char string[]);
 
-// Возвращает строку, содержащую текст приходящей строки, обернутый
-// в круглые скобки
-int add_circle_brackets_to_string(char** string);
+// Перевыделяет память для строки и добавляет круглые скобки 
+// в начало и конец строки
+// Возвращает код ошибки
+int add_circle_brackets_to_string(char* string[]);
 
 // Преобразует строку с несколькими множествами в строку с одним множеством
 // В случае неудачи возвращает код ошибки, иначе NO_ERROR
@@ -130,11 +131,9 @@ int main() {
 				}
 			} else {
 				printf("[error]");
-				break;
 			}
 		} else {
 			printf("[error]");
-			break;
 		}
 		free(buffer);
 	}
@@ -435,30 +434,6 @@ void numeric_set_to_char(numericSet_t *ns, char *begin, char *end) {
 	}
 }
 
-bool is_symbol_comma(char symbol) {
-	return symbol == ',';
-}
-
-bool is_symbol_left_circle_bracket(char symbol) {
-	return symbol == '(';
-}
-
-bool is_symbol_right_circle_bracket(char symbol) {
-	return symbol == ')';
-}
-
-bool is_symbol_left_square_bracket(char symbol) {
-	return symbol == '[';
-}
-
-bool is_symbol_right_square_bracket(char symbol) {
-	return symbol == ']';
-}
-
-bool is_symbol_space(char symbol) {
-	return symbol == ' ';
-}
-
 bool is_symbol_number(char symbol) {
 	return symbol >= '0' && symbol <= '9';
 }
@@ -467,7 +442,9 @@ bool is_symbol_operator(char symbol) {
 	return symbol == 'U' || symbol == '^' || symbol == '\\';
 }
 
-void check_number(const bool after_left_square, bool *after_comma,
+// Обновить флаги проверок после обнаружения в строке цифры и провести 
+// проверку может ли цифра находится в этом месте строки
+void work_with_symbol_number(const bool after_left_square, bool *after_comma,
 				 bool *after_number, int *error) {	
 	// Если число вне скобок
 	if (after_left_square == false) {
@@ -477,7 +454,9 @@ void check_number(const bool after_left_square, bool *after_comma,
 	*after_number = true;  // следующий символ находится за числом
 }
 
-void check_comma(bool *after_number, bool *after_comma, int *error) {
+// Обновить флаги проверок после обнаружения в строке запятой и провести 
+// проверку может ли запятая находится в этом месте строки
+void work_with_symbol_comma(bool *after_number, bool *after_comma, int *error) {
 	// Если запятая не идет после числа
 	if (*after_number == false) {
 		*error = ERROR_COMMA_NOT_AFTER_NUMBER;
@@ -486,7 +465,9 @@ void check_comma(bool *after_number, bool *after_comma, int *error) {
 	*after_comma = true;  // следующий символ находится за запятой
 }
 
-void check_operator(const bool after_left_square, int *operator_amount,
+// Обновить флаги проверок после обнаружения в строке одного из операторов
+// и провести проверку может ли оператор находится в этом месте строки
+void work_with_symbol_operator(const bool after_left_square, int *operator_amount,
 				   int *after_operator, int *error) {
 	// Если оператор идет после '['
 	if (after_left_square == true) {
@@ -496,7 +477,7 @@ void check_operator(const bool after_left_square, int *operator_amount,
 	*after_operator = 1;
 }
 
-void check_left_square_bracket(const int circle_brackets_amount, int *after_operator,
+void work_left_square_bracket(const int circle_brackets_amount, int *after_operator,
 							bool *after_left_square, bool *square_in_circle,
 							int *set_amount, int *error) {
 	// Если множество не за оператором
@@ -511,7 +492,7 @@ void check_left_square_bracket(const int circle_brackets_amount, int *after_oper
 	}
 }
 
-void check_right_square_bracket(const bool after_comma, bool *after_left_square,
+void work_right_square_bracket(const bool after_comma, bool *after_left_square,
 							 int *error) {
 	// Если конец множества идёт сразу после запятой
 	if (after_comma == true) {
@@ -524,7 +505,7 @@ void check_right_square_bracket(const bool after_comma, bool *after_left_square,
 	*after_left_square = false;  // Дальше символы идут вне множества
 }
 
-void check_left_circle_bracket(const bool after_left_square, bool *square_in_circle,
+void work_left_circle_bracket(const bool after_left_square, bool *square_in_circle,
 							int *circle_brackets_amount, int *error) {
 	// Если круглая скобка внутри квадратной
 	if (after_left_square == 1) {
@@ -535,7 +516,7 @@ void check_left_circle_bracket(const bool after_left_square, bool *square_in_cir
 	*square_in_circle = 0;  // Скобки не содержат множеств
 }
 
-void check_right_circle_bracket(int *circle_brackets_amount, int *after_operator,
+void work_right_circle_bracket(int *circle_brackets_amount, int *after_operator,
 							 int *error) {
 	// Количество скобок уменьшилось
 	*circle_brackets_amount = *circle_brackets_amount - 1;
@@ -553,14 +534,13 @@ void check_right_circle_bracket(int *circle_brackets_amount, int *after_operator
 size_t get_string_size(const char string[])
 {
 	size_t size = 0;
-	while (string[size] != '\0')
-	{
+	while (string[size] != '\0') {
 		size++;
 	}
 	return size;
 }
 
-int add_circle_brackets_to_string(char** string) {
+int add_circle_brackets_to_string(char* string[]) {
 	size_t size = get_string_size(*string);
 	
 	char* tmp = realloc(*string, size + 2);
@@ -601,26 +581,34 @@ int check_string(const char *string) {
 	int operator_amount = 0;        //количество операторов
 	
 	int error = NO_ERROR;
+	
+	// Именованные константы
+	const char symbol_space = ' ';
+	const char symbol_comma = ',';
+	const char symbol_left_square_bracket = '[';
+	const char symbol_right_square_bracket = ']';
+	const char symbol_left_circle_bracket = '(';
+	const char symbol_right_circle_bracket = ')';
 
 	for (const char *symbol = string; *symbol != '\0' && error == NO_ERROR; symbol++) {
-		if (is_symbol_space(*symbol)) {
+		if (*symbol == symbol_space) {
 		} else if (is_symbol_number(*symbol)) {
-			check_number(after_left_square, &after_comma, &after_number, &error);
-		} else if (is_symbol_comma(*symbol)) {
-			check_comma(&after_number, &after_comma, &error);
+			work_with_symbol_number(after_left_square, &after_comma, &after_number, &error);
+		} else if (*symbol == symbol_comma) {
+			work_with_symbol_comma(&after_number, &after_comma, &error);
 		} else if (is_symbol_operator(*symbol)) {
-			check_operator(after_left_square, &operator_amount, &after_operator, &error);
-		} else if (is_symbol_left_square_bracket(*symbol)) {
-			check_left_square_bracket(circle_brackets_amount, &after_operator,
+			work_with_symbol_operator(after_left_square, &operator_amount, &after_operator, &error);
+		} else if (*symbol == symbol_left_square_bracket) {
+			work_left_square_bracket(circle_brackets_amount, &after_operator,
 								   &after_left_square, &square_in_circle, &set_amount,
 								   &error);
-		} else if (is_symbol_right_square_bracket(*symbol)) {
-			check_right_square_bracket(after_comma, &after_left_square, &error);
-		} else if (is_symbol_left_circle_bracket(*symbol)) {
-			check_left_circle_bracket(after_left_square, &square_in_circle,
+		} else if (*symbol == symbol_right_square_bracket) {
+			work_right_square_bracket(after_comma, &after_left_square, &error);
+		} else if (*symbol == symbol_left_circle_bracket) {
+			work_left_circle_bracket(after_left_square, &square_in_circle,
 								   &circle_brackets_amount, &error);
-		} else if (is_symbol_right_circle_bracket(*symbol)) {
-			check_right_circle_bracket(&circle_brackets_amount, &after_operator, &error);
+		} else if (*symbol == symbol_right_circle_bracket) {
+			work_right_circle_bracket(&circle_brackets_amount, &after_operator, &error);
 		} else {  // если запрещенный символ
 			error = ERROR_WRONG_SYMBOL;
 		}
@@ -697,17 +685,23 @@ int calculate_sets_in_string(char* string, char* begin, char* end,
 	
 	int number = 0;
 	
+	// Именованные константы
+	const char symbol_space = ' ';
+	const char symbol_comma = ',';
+	const char symbol_left_square_bracket = '[';
+	const char symbol_right_square_bracket = ']';
+	
 	for (char *letter = begin;
 		 error == NO_ERROR && letter < end;
 		 letter++) {
-		if (is_symbol_left_square_bracket(*letter)) {
+		if (*letter == symbol_left_square_bracket) {
 			first = set_create(&error);
 			number = 0;
 
 			if (!(operator == current_operator)) {
 				localBegin = letter;
 			}
-		} else if (is_symbol_right_square_bracket(*letter)) {
+		} else if (*letter == symbol_right_square_bracket) {
 			if (number != 0) {
 				error = set_add(first, number);
 			}
@@ -731,13 +725,13 @@ int calculate_sets_in_string(char* string, char* begin, char* end,
 					first = NULL;
 				}
 			}
-		} else if (is_symbol_comma(*letter)) {
+		} else if (*letter == symbol_comma) {
 			set_add(first, number);
 			number = 0;
 		} else if (is_symbol_number(*letter)) {
 			number *= 10;
 			number += (*letter - '0');
-		} else if (is_symbol_space(*letter)) {
+		} else if (*letter == symbol_space) {
 		} else {
 			operator = *letter;
 		}
