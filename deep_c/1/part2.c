@@ -51,42 +51,42 @@ Memory limit:	64 M
 
 #define BUFFER_SIZE 32
 
-typedef struct numericSet_t {
+typedef struct numeric_set_t {
 	int *numbers;
 	size_t max_size;
 	size_t real_size;
-} numericSet_t;
+} numeric_set_t;
 
 // Обменять местами двух целочисленных значений
 void swap(int *a, int *b);
 
 // Печатать множество
-void set_print(const numericSet_t *ns);
+void set_print(const numeric_set_t *ns);
 
 // Создать множество
-numericSet_t *set_create(int *error);
+numeric_set_t *set_create(int *error);
 
 // Очистить множество
-void set_clear(numericSet_t *ns);
+void set_clear(numeric_set_t * ns);
 
 // Добавить элемент в множество
-int set_add(numericSet_t *ns, int num);
+int set_add(numeric_set_t *ns, int num);
 
 // Добавить в множество to элементы из множества for
-void set_add_from_set(const numericSet_t *from,
-			numericSet_t *to, int *error);
+void set_add_from_set(const numeric_set_t *from,
+			numeric_set_t *to, int *error);
 
 // Получить пересечение множеств(с очисткой)
-numericSet_t *get_union_of_sets(numericSet_t *A,
-			numericSet_t *B, int *error);
+numeric_set_t * get_union_of_sets(numeric_set_t *A,
+			numeric_set_t *B, int *error);
 
 // Получить пересечение множеств(с очисткой)
-numericSet_t *get_intersection_of_sets(numericSet_t *A,
-			numericSet_t *B, int *error);
+numeric_set_t * get_intersection_of_sets(numeric_set_t *A,
+			numeric_set_t *B, int *error);
 
 // получить разность множеств(с очисткой)
-numericSet_t *get_subtraction_of_sets(numericSet_t *A,
-			numericSet_t *B, int *error);
+numeric_set_t * get_subtraction_of_sets(numeric_set_t *A,
+			numeric_set_t *B, int *error);
 
 // Получить размер числа
 size_t get_number_size(int number);
@@ -95,7 +95,7 @@ size_t get_number_size(int number);
 void insert_number_in_string(int number, char *begin[]);
 
 // Вставить множество в строку
-void numeric_set_to_char(numericSet_t *ns, char *begin, char *end);
+void numeric_set_to_string(numeric_set_t *ns, char *begin, char *end);
 
 // Проверить строку на корректность
 int check_string(const char string[]);
@@ -112,7 +112,13 @@ int merge_all_sets_in_string_into_one(char string[]);
 // Распечатать строку без пробелов
 void print_without_spaces(const char string[]);
 
-bool find_circle_brackets(char string[],
+// Возвращает true, если удалось найти позиции скобок и false если нет
+// В случае успеха left и right указывают на положение левой и правой скобок
+// в строке.
+// Подразумевается, что на вход приходит строка, в которой круглые скобки
+// расставлены в правильном порядке и количество '(' и ')' совпадает 	
+
+bool find_circle_brackets_position_in_string(char string[],
 							char* left[], char* right[]);
 
 void unit_tests();
@@ -121,10 +127,11 @@ int get_string(char **lineptr, size_t *n, int delimiter, FILE *stream);
 
 int main() {
 	
-	//gcc -o main.exe part2.c -D _DEBUG
-	#ifdef _DEBUG
+	//gcc -o main.exe part2.c -D _UNIT_TESTS
+	#ifdef _UNIT_TESTS
          unit_tests();
-    #else
+		 return 0;
+    #endif
 		char *buffer = NULL;
 		int error = NO_ERROR;
 		size_t max_size = BUFFER_SIZE;
@@ -134,24 +141,19 @@ int main() {
 				error = add_circle_brackets_to_string(&buffer);
 				if (error == NO_ERROR) {
 					error = merge_all_sets_in_string_into_one(buffer);
-					if (error != NO_ERROR) {
-						printf("[error]");
-					} else {
+					if (error == NO_ERROR) {
 						print_without_spaces(buffer);
 					}
-				} else {
-					printf("[error]");
 				}
-			} else {
+			}
+			if (error != NO_ERROR) {
 				printf("[error]");
 			}
-			
 			free(buffer);
 			buffer = NULL; // Чтобы при последующем считывании get_string
 			// увидел, что строка пуста и необходимо выделить память
 		}
 		free(buffer);
-	#endif
 	return 0;
 }
 
@@ -168,7 +170,7 @@ void swap(int *a, int *b) {
 	*b = tmp;
 }
 
-void set_print(const numericSet_t *ns) {
+void set_print(const numeric_set_t *ns) {
 	assert(ns != NULL);
 
 	if (ns == NULL) {
@@ -181,20 +183,20 @@ void set_print(const numericSet_t *ns) {
 		return;
 	}
 	printf("[%d", ns->numbers[0]);
-	for (size_t i = 1; i < size; i++) {
+	for (size_t i = 1; i < size; ++i) {
 		printf(",%d", ns->numbers[i]);
 	}
 	printf("]");
 }
 
-numericSet_t *set_create(int *error) {
+numeric_set_t * set_create(int *error) {
 	assert(error != NULL);
 
 	if (error == NULL) {
 		return NULL;
 	}
 
-	numericSet_t *ns = (numericSet_t *)calloc(1, sizeof(numericSet_t));
+	numeric_set_t * ns = (numeric_set_t *)calloc(1, sizeof(numeric_set_t));
 	if (ns == NULL) {
 		*error = MEMORY_ERROR;
 		return NULL;
@@ -211,14 +213,14 @@ numericSet_t *set_create(int *error) {
 	return ns;
 }
 
-void set_clear(numericSet_t *ns) {
+void set_clear(numeric_set_t *ns) {
 	if (ns != NULL) {
 		free(ns->numbers);
 		free(ns);
 	}
 }
 
-int set_add(numericSet_t *ns, int num) {
+int set_add(numeric_set_t *ns, int num) {
 	assert(ns != NULL);
 	assert(num > 0);
 
@@ -229,7 +231,7 @@ int set_add(numericSet_t *ns, int num) {
 	// Если числовое множество не содержит элементов
 	if (ns->real_size == 0) {
 		ns->numbers[0] = num;
-		ns->real_size++;
+		++ns->real_size;
 		return NO_ERROR;
 	}
 
@@ -261,7 +263,7 @@ int set_add(numericSet_t *ns, int num) {
 	return NO_ERROR;
 }
 
-void set_add_from_set(const numericSet_t *from, numericSet_t *to, int *error) {
+void set_add_from_set(const numeric_set_t *from, numeric_set_t *to, int *error) {
 	assert(to != NULL);
 	assert(from != NULL);
 	assert(error != NULL);
@@ -276,12 +278,12 @@ void set_add_from_set(const numericSet_t *from, numericSet_t *to, int *error) {
 	}
 
 	size_t size = from->real_size;
-	for (size_t i = 0; (i < size) && (*error == NO_ERROR); i++) {
+	for (size_t i = 0; (i < size) && (*error == NO_ERROR); ++i) {
 		*error = set_add(to, from->numbers[i]);
 	}
 }
 
-numericSet_t *get_union_of_sets(numericSet_t *A, numericSet_t *B, int *error) {
+numeric_set_t *get_union_of_sets(numeric_set_t *A, numeric_set_t *B, int *error) {
 	assert(A != NULL);
 	assert(B != NULL);
 	assert(error != NULL);
@@ -295,7 +297,7 @@ numericSet_t *get_union_of_sets(numericSet_t *A, numericSet_t *B, int *error) {
 		return NULL;
 	}
 
-	numericSet_t *ret = set_create(error);
+	numeric_set_t *ret = set_create(error);
 	if (*error != NO_ERROR) {
 		return NULL;
 	}
@@ -306,8 +308,8 @@ numericSet_t *get_union_of_sets(numericSet_t *A, numericSet_t *B, int *error) {
 	return ret;
 }
 
-numericSet_t *get_intersection_of_sets(numericSet_t *A,
-			numericSet_t *B, int *error) {
+numeric_set_t *get_intersection_of_sets(numeric_set_t *A,
+			numeric_set_t *B, int *error) {
 	assert(A != NULL);
 	assert(B != NULL);
 	assert(error != NULL);
@@ -323,20 +325,20 @@ numericSet_t *get_intersection_of_sets(numericSet_t *A,
 
 	// Проверка error не требуется, поскольку цикл ниже
 	// имеет условие *error == NO_ERROR
-	numericSet_t *ret = set_create(error);
+	numeric_set_t *ret = set_create(error);
 
 	size_t sizeA = A->real_size, sizeB = B->real_size;
 	size_t iA = 0, iB = 0;
 
 	while ((iA < sizeA) && (iB < sizeB)  && (*error == NO_ERROR)) {
 		if (A->numbers[iA] < B->numbers[iB]) {
-			iA++;
+			++iA;
 		} else if (A->numbers[iA] > B->numbers[iB]) {
-			iB++;
+			++iB;
 		} else {
 			*error = set_add(ret, A->numbers[iA]);
-			iB++;
-			iA++;
+			++iB;
+			++iA;
 		}
 	}
 	
@@ -350,8 +352,8 @@ numericSet_t *get_intersection_of_sets(numericSet_t *A,
 	return ret;
 }
 
-numericSet_t *get_subtraction_of_sets(numericSet_t *A,
-			numericSet_t *B, int *error) {
+numeric_set_t *get_subtraction_of_sets(numeric_set_t *A,
+			numeric_set_t *B, int *error) {
 	assert(A != NULL);
 	assert(B != NULL);
 	assert(error != NULL);
@@ -368,17 +370,17 @@ numericSet_t *get_subtraction_of_sets(numericSet_t *A,
 	size_t sizeA = A->real_size, sizeB = B->real_size;
 	size_t iA = 0, iB = 0;
 	
-	numericSet_t *ret = set_create(error);
+	numeric_set_t *ret = set_create(error);
 
 	while ((iA < sizeA) && (iB < sizeB) && (*error == NO_ERROR)) {
 		if (A->numbers[iA] < B->numbers[iB]) {
-			iA++;
+			++iA;
 		} else if (A->numbers[iA] > B->numbers[iB]) {
 			*error = set_add(ret, B->numbers[iB]);
-			iB++;
+			++iB;
 		} else {
-			iB++;
-			iA++;
+			++iB;
+			++iA;
 		}
 	}
 
@@ -403,7 +405,7 @@ size_t get_number_size(int number) {
 	size_t size = 0;
 	while (number != 0) {
 		number /= 10;
-		size++;
+		++size;
 	}
 	return size;
 }
@@ -426,7 +428,7 @@ void insert_number_in_string(int number, char *begin[]) {
 	*begin = *begin + size;
 }
 
-void numeric_set_to_char(numericSet_t *ns, char *begin, char *end) {
+void numeric_set_to_string(numeric_set_t *ns, char *begin, char *end) {
 	assert(ns != NULL);
 	assert(begin != NULL);
 	assert(end != NULL);
@@ -439,7 +441,7 @@ void numeric_set_to_char(numericSet_t *ns, char *begin, char *end) {
 	*end = ']';
 
 	int size = ns->real_size;
-	for (int i = 0; i < size; i++) {
+	for (int i = 0; i < size; ++i) {
 		if (i != 0) {
 			*(begin++) = ',';
 		}
@@ -557,7 +559,7 @@ size_t get_string_size(const char string[]) {
 	
 	size_t size = 0;
 	while (string[size] != '\0') {
-		size++;
+		++size;
 	}
 	return size;
 }
@@ -590,7 +592,7 @@ int add_circle_brackets_to_string(char* string[]) {
 
 // Проверить строку string на корректность в рамках ТЗ
 // Возвращает код ошибки
-int check_string(const char *string) {
+int check_string(const char string[]) {
 	assert(string != NULL);
 
 	if (string == NULL) {
@@ -621,7 +623,7 @@ int check_string(const char *string) {
 	const char symbol_right_circle_bracket = ')';
 
 	for (const char *symbol = string;
-		*symbol != '\0' && error == NO_ERROR; symbol++) {
+		*symbol != '\0' && error == NO_ERROR; ++symbol) {
 		if (*symbol == symbol_space) {
 		} else if (is_symbol_number(*symbol)) {
 			work_with_symbol_number(after_left_square, &after_comma,
@@ -672,8 +674,8 @@ int check_string(const char *string) {
 // Выполнить операцию operator над множествами first и second
 // Возвращает указатель на результирующее множество или NULL с кодом ошибки
 // в *error в случае, если что то пошло не по плану 
-numericSet_t *apply_operation(char operator, numericSet_t *first,
-							numericSet_t *second, int *error) {
+numeric_set_t *apply_operation(char operator, numeric_set_t *first,
+							numeric_set_t *second, int *error) {
 	assert(first != NULL);
 	assert(second != NULL);
 	assert(error != NULL);
@@ -687,7 +689,7 @@ numericSet_t *apply_operation(char operator, numericSet_t *first,
 		return NULL;
 	}
 	
-	numericSet_t *result = NULL;
+	numeric_set_t *result = NULL;
 	switch (operator) {
 	case 'U': {
 		result = get_union_of_sets(first, second, error);
@@ -723,7 +725,7 @@ int calculate_sets_in_string(char* begin, char* end,
 		return WRONG_INPUT;
 	}
 	
-	numericSet_t *first = NULL, *second = NULL;
+	numeric_set_t * first = NULL, *second = NULL;
 	
 	char *localBegin = NULL;
 	char operator = ' ';
@@ -740,7 +742,7 @@ int calculate_sets_in_string(char* begin, char* end,
 	
 	for (char *letter = begin;
 		 error == NO_ERROR && letter < end;
-		 letter++) {
+		 ++letter) {
 		// Если встретили '[', создаем множество
 		if (*letter == symbol_left_square_bracket) {
 			first = set_create(&error);
@@ -769,7 +771,7 @@ int calculate_sets_in_string(char* begin, char* end,
 						// Перезаписываем ту часть строки, где стояли 2 множества
 						// с оператором в результирующее множество, например
 						// '[1,2]U[3]' -> '[1,2,3  ]'
-						numeric_set_to_char(second, localBegin, letter);
+						numeric_set_to_string(second, localBegin, letter);
 						
 						operator = ' ';
 					}
@@ -796,6 +798,7 @@ int calculate_sets_in_string(char* begin, char* end,
 			number *= 10;
 			number += (*letter - '0');
 		} else if (*letter == symbol_space) {
+			// Пробелы пропускаем
 		} else {
 			operator = *letter;
 		}
@@ -812,7 +815,7 @@ void print_without_spaces(const char string[])
 	}
 	
 	size_t size = get_string_size(string);
-	for (size_t i = 0; i < size; i++)
+	for (size_t i = 0; i < size; ++i)
 	{
 		if (string[i] != ' ') {
 			printf("%c", string[i]);
@@ -820,12 +823,12 @@ void print_without_spaces(const char string[])
 	}
 }
 
-// Возвращает true, если удалось найти пару скобок и false если нет
+// Возвращает true, если удалось найти позиции скобок и false если нет
 // В случае успеха left и right указывают на положение левой и правой скобок
 // в строке.
 // Подразумевается, что на вход приходит строка, в которой круглые скобки
 // расставлены в правильном порядке и количество '(' и ')' совпадает 	
-bool find_circle_brackets(char string[],
+bool find_circle_brackets_position_in_string(char string[],
 							char** left, char** right) {
 	assert(string != NULL);
 	assert(left != NULL);
@@ -842,7 +845,7 @@ bool find_circle_brackets(char string[],
 	const char right_circle = ')';
 	for (char* letter = string; // пока right не найдено
 		*letter != '\0' && *right == NULL;
-		letter++) {
+		++letter) {
 		if (*letter == left_circle) {
 			*left = letter;
 		} else if (*letter == right_circle) {
@@ -872,14 +875,14 @@ int merge_all_sets_in_string_into_one(char string[]) {
 	char *left_circle, *right_circle;
 
 	// Пока строка содержит скобки
-	while (find_circle_brackets(string,
+	while (find_circle_brackets_position_in_string(string,
 								&left_circle, &right_circle)) {
 		
 		// Цикл по строке из символов - операторов. 
 		// В строку они записаны в порядке понижения приоритета
 		for (char *currentOperator = operations;
 			*currentOperator != '\0' && error == NO_ERROR;
-				currentOperator++) {
+				++currentOperator) {
 			error = calculate_sets_in_string(left_circle,
 									right_circle,
 									*currentOperator);
@@ -904,94 +907,94 @@ void print_result_of_unit_test(int real_error, int my_error, char name[]) {
 }
 
 void case_error_one_circle_bracket() {
-	char *string = "(";
+	char string[] = "(";
 	int error = check_string(string);
 	print_result_of_unit_test(ERROR_NO_CIRCLE_END, error, string);
 }
 
 void case_error_empty_circle_brackets() {
-	char *string = "()";
+	char string[] = "()";
 	int error = check_string(string);
 	print_result_of_unit_test(ERROR_NO_SQUERE_IN_CIRCLE, error, string);
 }
 
 void case_error_extra_comma_in_set() {
-	char *string = "[1,2,3,]";
+	char string[] = "[1,2,3,]";
 	int error = check_string(string);
 	print_result_of_unit_test(ERROR_COMMA_WITHOUT_NUMBER, error, string);
 }
 
 void case_error_no_number_between_two_comma() {
-	char *string = "[1,,3]";
+	char string[] = "[1,,3]";
 	int error = check_string(string);
 	print_result_of_unit_test(ERROR_COMMA_NOT_AFTER_NUMBER, error, string);
 }
 
 void case_error_number_outside_set() {
-	char *string = "[1]3";
+	char string[] = "[1]3";
 	int error = check_string(string);
 	print_result_of_unit_test(ERROR_NUMBER_NOT_IN_SET, error, string);
 }
 
 void case_error_circle_brackets_outside_set_right() {
-	char *string = "[1]()";
+	char string[] = "[1]()";
 	int error = check_string(string);
 	print_result_of_unit_test(ERROR_NO_SQUERE_IN_CIRCLE, error, string);
 }
 
 void case_error_circle_brackets_outside_set_left() {
-	char *string = "()[1]";
+	char string[] = "()[1]";
 	int error = check_string(string);
 	print_result_of_unit_test(ERROR_NO_SQUERE_IN_CIRCLE, error, string);
 }
 
 void case_error_set_in_set() {
-	char *string = "[[1]]";
+	char string[] = "[[1]]";
 	int error = check_string(string);
 	print_result_of_unit_test(ERROR_OPERATOR_WITHOUT_SETS, error, string);
 }
 
 void case_operator_without_numbers() {
-	char *string = "[[1] U]";
+	char string[] = "[[1] U]";
 	int error = check_string(string);
 	print_result_of_unit_test(ERROR_OPERATOR_WITHOUT_SETS, error, string);
 }
 
 void case_operator_between_numbers() {
-	char *string = "[U 1 U]";
+	char string[] = "[U 1 U]";
 	int error = check_string(string);
 	print_result_of_unit_test(ERROR_OPERATOR_WITHOUT_SETS, error, string);
 }
 
 void case_set_has_no_end() {
-	char *string = "[1,2,3,4";
+	char string[] = "[1,2,3,4";
 	int error = check_string(string);
 	print_result_of_unit_test(ERROR_NO_SQUERE_END, error, string);
 }
 
 void case_set_has_no_start() {
-	char *string = "1,2,3,4]";
+	char string[] = "1,2,3,4]";
 	int error = check_string(string);
 	print_result_of_unit_test(ERROR_NO_SQUERE_END, error, string);
 }
 
 void case_error_incorrect_set() {
-	char *string = "[1,2,3,4] U][";
+	char string[] = "[1,2,3,4] U][";
 	int error = check_string(string);
 	print_result_of_unit_test(ERROR_SQUERE_END_BEFORE_START, error, string);
 }
 void case_error_incorrect_operator() {
-	char *string = "([1,2,3,4] U))U([])";
+	char string[] = "([1,2,3,4] U))U([])";
 	int error = check_string(string);
 	print_result_of_unit_test(ERROR_CIRCLE_END_BEFORE_START, error, string);
 }
 void case_error_incorrect_operator_2() {
-	char *string = "([1,2,3,4] U)[]";
+	char string[] = "([1,2,3,4] U)[]";
 	int error = check_string(string);
 	print_result_of_unit_test(ERROR_OPERATOR_WITHOUT_SETS, error, string);
 }
 void case_error_empty_string() {
-	char *string = "     ";
+	char string[] = "     ";
 	int error = check_string(string);
 	print_result_of_unit_test(ERROR_WRONG_NUMBER_OF_OPERATORS, error, string);
 }
@@ -1017,33 +1020,33 @@ void error_tests() {
 }
 
 void case_right_two_usual_sets() {
-	char *string = "([3,4] U [2])";
+	char string[] = "([3,4] U [2])";
 	int error = check_string(string);
 	print_result_of_unit_test(NO_ERROR, error, string);
 }
 
 void case_right_six_empty_sets() {
-	char *string = "([]U([]\\([])^([] ^   ([] U []))))";
+	char string[] = "([]U([]\\([])^([] ^   ([] U []))))";
 	int error = check_string(string);
 	print_result_of_unit_test(NO_ERROR, error, string);
 }
 void case_right_set_in_circle_brackets() {
-	char *string = "([1])";
+	char string[] = "([1])";
 	int error = check_string(string);
 	print_result_of_unit_test(NO_ERROR, error, string);
 }
 void case_right_set_in_circle_brackets_2_times() {
-	char *string = "(([1]))";
+	char string[] = "(([1]))";
 	int error = check_string(string);
 	print_result_of_unit_test(NO_ERROR, error, string);
 }
 void case_right_two_empty_sets() {
-	char *string = "[]U[]";
+	char string[] = "[]U[]";
 	int error = check_string(string);
 	print_result_of_unit_test(NO_ERROR, error, string);
 }
 void case_right_two_empty_sets_in_brackets() {
-	char *string = "([])U([])";
+	char string[] = "([])U([])";
 	int error = check_string(string);
 	print_result_of_unit_test(NO_ERROR, error, string);
 }
@@ -1072,7 +1075,6 @@ int get_string(char **lineptr, size_t *n, int delimiter, FILE *stream) {
 		return WRONG_INPUT;
 	}
 	
-	*n = 100;
 	size_t count = 0;
 	char *pb = NULL;
 	char c = 0;
@@ -1106,8 +1108,8 @@ int get_string(char **lineptr, size_t *n, int delimiter, FILE *stream) {
 			break;
 		}
 		*pb = c;
-		pb++;
-		count++;
+		++pb;
+		++count;
 	}
 
 	if (count == 0) {
