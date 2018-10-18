@@ -143,7 +143,7 @@ int main() {
         if (error == NO_ERROR) {
             process_string(buffer);
         } else {
-            printf("[error]1");
+            printf("[error]");
         }
         free(buffer);
         buffer = NULL;  // Чтобы при последующем считывании get_string
@@ -174,7 +174,7 @@ void process_string(char string[])
 	if (string != NULL && merge_all_sets_in_string_into_one(string) == NO_ERROR) {
 		print_without_spaces(string);
 	} else {
-		printf("[error]2");
+		printf("[error]");
 	}
 }
 
