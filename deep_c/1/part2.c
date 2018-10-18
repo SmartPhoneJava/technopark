@@ -112,7 +112,7 @@ int merge_all_sets_in_string_into_one(char string[]);
 // Распечатать строку без пробелов
 void print_without_spaces(const char string[]);
 
-bool find_circle_brackets(char string[], size_t string_size,
+bool find_circle_brackets(char string[],
 							char* left[], char* right[]);
 
 void unit_tests();
@@ -150,6 +150,7 @@ int main() {
 			buffer = NULL; // Чтобы при последующем считывании get_string
 			// увидел, что строка пуста и необходимо выделить память
 		}
+		free(buffer);
 	#endif
 	return 0;
 }
@@ -571,7 +572,7 @@ int add_circle_brackets_to_string(char* string[]) {
 	
 	size_t size = get_string_size(*string);
 	
-	char* tmp = realloc(*string, size + 2);
+	char* tmp = realloc(*string, size + 3);
 	if (!tmp) {
 		return MEMORY_ERROR;
 	}
@@ -582,6 +583,7 @@ int add_circle_brackets_to_string(char* string[]) {
 	}
 	(*string)[0] = '(';
 	(*string)[size + 1] = ')';
+	(*string)[size + 2] = '\0';
 	
 	return NO_ERROR;
 }
@@ -594,8 +596,6 @@ int check_string(const char *string) {
 	if (string == NULL) {
 		return WRONG_INPUT;
 	}
-	
-	size_t size = strlen(string);
 
 	bool after_number = false;  // находится ли символ после числа
 	// Находится ли множество за оператором
@@ -825,17 +825,13 @@ void print_without_spaces(const char string[])
 // в строке.
 // Подразумевается, что на вход приходит строка, в которой круглые скобки
 // расставлены в правильном порядке и количество '(' и ')' совпадает 	
-bool find_circle_brackets(char string[], size_t string_size,
-							char* left[], char* right[]) {
+bool find_circle_brackets(char string[],
+							char** left, char** right) {
 	assert(string != NULL);
 	assert(left != NULL);
 	assert(right != NULL);
-	assert(*left != NULL);
-	assert(*right != NULL);
-	assert(string_size > 0);
 	
-	if ((string == NULL)  || (left == NULL)  || (right == NULL)  ||
-		(*left == NULL)  || (*right == NULL)  || (string_size == 0))	{
+	if ((string == NULL)  || (left == NULL)  || (right == NULL)) {
 		return false;
 	}
 	
@@ -844,13 +840,13 @@ bool find_circle_brackets(char string[], size_t string_size,
 	
 	const char left_circle = '(';
 	const char right_circle = ')';
-	for (size_t i = 0; // пока right не найдено
-		i < string_size && *right == NULL;
-		i++) {
-		if (string[i] == left_circle) {
-			*left = string + i;
-		} else if (string[i] == right_circle) {
-			*right = string + i;
+	for (char* letter = string; // пока right не найдено
+		*letter != '\0' && *right == NULL;
+		letter++) {
+		if (*letter == left_circle) {
+			*left = letter;
+		} else if (*letter == right_circle) {
+			*right = letter;
 		}
 	}
 	if (*right == NULL) {
@@ -868,7 +864,6 @@ int merge_all_sets_in_string_into_one(char string[]) {
 		return WRONG_INPUT;
 	}
 
-	int strsize = strlen(string);
 	int error = NO_ERROR;
 
 	// Возможные операции
@@ -877,7 +872,7 @@ int merge_all_sets_in_string_into_one(char string[]) {
 	char *left_circle, *right_circle;
 
 	// Пока строка содержит скобки
-	while (find_circle_brackets(string, strsize,
+	while (find_circle_brackets(string,
 								&left_circle, &right_circle)) {
 		
 		// Цикл по строке из символов - операторов. 
