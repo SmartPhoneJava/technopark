@@ -36,8 +36,8 @@ Memory limit:	64 M
 #define NO_ERROR 1
 #define ERROR 0
 
-#define STRING_SIZE 32
-#define LINES_COUNT 4
+#define STRING_SIZE 4
+#define LINES_COUNT 10
 
 typedef char (*string_ptr)[STRING_SIZE];
 
@@ -153,13 +153,10 @@ int get_string(FILE* stream, string_ptr str_ptr) {
 
 	pb = *str_ptr;
 
-	while ((c = fgetc(stream)) != EOF && count != STRING_SIZE - 1) {
+	while (count < STRING_SIZE - 1 && (c = fgetc(stream)) != EOF) {
 		*pb = c;
 		pb++;
 		count++;
-		if (c == '\n') {
-			break;
-		}
 	}
 
 	if (count == NO_SYMBOLS) {
