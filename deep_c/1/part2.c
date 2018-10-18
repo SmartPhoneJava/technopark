@@ -64,7 +64,7 @@ void swap(int *a, int *b);
 void set_print(const numeric_set_t *ns);
 
 // Создать множество
-numeric_set_t *set_create(int *error);
+numeric_set_t *set_create();
 
 // Очистить множество
 void set_clear(numeric_set_t *ns);
@@ -143,7 +143,7 @@ int main() {
         if (error == NO_ERROR) {
             process_string(buffer);
         } else {
-            printf("[error]");
+            printf("[error]1");
         }
         free(buffer);
         buffer = NULL;  // Чтобы при последующем считывании get_string
@@ -154,7 +154,7 @@ int main() {
 }
 
 int prepare_string_for_processing(char* string[]) {
-	assert(string != NULL)
+	assert(string != NULL);
 	
 	if (string == NULL) {
 		return WRONG_INPUT;
@@ -169,17 +169,12 @@ int prepare_string_for_processing(char* string[]) {
 
 void process_string(char string[])
 {
-	assert(string != NULL)
+	assert(string != NULL);
 	
-	if (string == NULL) {
-		return WRONG_INPUT;
-	}
-	
-	int error = merge_all_sets_in_string_into_one(string);
-	if (error == NO_ERROR) {
+	if (string != NULL && merge_all_sets_in_string_into_one(string) == NO_ERROR) {
 		print_without_spaces(string);
 	} else {
-		printf("[error]");
+		printf("[error]2");
 	}
 }
 
@@ -215,28 +210,35 @@ void set_print(const numeric_set_t *ns) {
     printf("]");
 }
 
-numeric_set_t *set_create(int *error) {
-    assert(error != NULL);
+// Выделяет память под множество
+numeric_set_t *set_allocate_memory() {
+	numeric_set_t *ns = (numeric_set_t *)calloc(1, sizeof(numeric_set_t));
+	return ns;
+}
 
-    if (error == NULL) {
+// Выделяет память под целочисленный массив в множестве
+// Возврщает true в случае успеха, иначе false
+bool set_int_array_allocate_memory(numeric_set_t *set) {
+	set->numbers = (int *)calloc(set->max_size, sizeof(int));
+    if (set->numbers == NULL) {
+        return false;
+    }
+	return true;
+}
+
+numeric_set_t *set_create() {
+    numeric_set_t *set = set_allocate_memory();
+    if (set == NULL) {
         return NULL;
     }
 
-    numeric_set_t *ns = (numeric_set_t *)calloc(1, sizeof(numeric_set_t));
-    if (ns == NULL) {
-        *error = MEMORY_ERROR;
+    set->max_size = BUFFER_SIZE;
+    set->real_size = 0;
+    if (!set_int_array_allocate_memory(set)) {
+        free(set);
         return NULL;
     }
-
-    ns->max_size = 2;
-    ns->real_size = 0;
-    ns->numbers = (int *)calloc(ns->max_size, sizeof(int));
-    if (ns->numbers == NULL) {
-        free(ns);
-        *error = MEMORY_ERROR;
-        return NULL;
-    }
-    return ns;
+    return set;
 }
 
 void set_clear(numeric_set_t *ns) {
@@ -329,14 +331,15 @@ numeric_set_t *get_union_of_sets(numeric_set_t *A, numeric_set_t *B,
         return NULL;
     }
 
-    numeric_set_t *ret = set_create(error);
-    if (*error != NO_ERROR) {
-        return NULL;
-    }
-    set_add_from_set(A, ret, error);
-    set_add_from_set(B, ret, error);
-    set_clear(A);
-    set_clear(B);
+    numeric_set_t *ret = set_create();
+    if (ret != NULL) {
+		set_add_from_set(A, ret, error);
+		set_add_from_set(B, ret, error);
+		set_clear(A);
+		set_clear(B);
+	} else {
+		*error = MEMORY_ERROR;
+	}
     return ret;
 }
 
@@ -357,7 +360,11 @@ numeric_set_t *get_intersection_of_sets(numeric_set_t *A, numeric_set_t *B,
 
     // Проверка error не требуется, поскольку цикл ниже
     // имеет условие *error == NO_ERROR
-    numeric_set_t *ret = set_create(error);
+    numeric_set_t *ret = set_create();
+	if (ret == NULL) {
+		*error = MEMORY_ERROR;
+		return NULL;
+	}
 
     size_t sizeA = A->real_size;
     size_t sizeB = B->real_size;
@@ -407,6 +414,10 @@ numeric_set_t *get_subtraction_of_sets(numeric_set_t *A, numeric_set_t *B,
     size_t iB = 0;
 
     numeric_set_t *ret = set_create(error);
+	if (ret == NULL) {
+		*error = MEMORY_ERROR;
+		return NULL;
+	}
 
     while ((iA < sizeA) && (iB < sizeB) && (*error == NO_ERROR)) {
         if (A->numbers[iA] < B->numbers[iB]) {
@@ -734,7 +745,10 @@ int calculate_sets_in_string(char *begin, char *end, char current_operator) {
     for (char *letter = begin; error == NO_ERROR && letter < end; ++letter) {
         // Если встретили '[', создаем множество
         if (*letter == symbol_left_square_bracket) {
-            first = set_create(&error);
+            first = set_create();
+			if (first == NULL) {
+				error = MEMORY_ERROR;
+			}
             number = 0;
 
             // Определяем, что перед нами множество, стоящее слева от
@@ -873,7 +887,6 @@ int merge_all_sets_in_string_into_one(char string[]) {
         *left_circle = ' ';
         *right_circle = ' ';
     }
-
     return error;
 }
 
