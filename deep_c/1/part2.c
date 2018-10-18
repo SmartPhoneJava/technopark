@@ -124,6 +124,12 @@ void unit_tests();
 
 int get_string(char **lineptr, size_t *n, int delimiter, FILE *stream);
 
+// Подготовить строку к обработке
+int prepare_string_for_processing(char *string[]);
+
+// Обработать строку
+void process_string(char string[]);
+
 int main() {
 // gcc -o main.exe part2.c -D _UNIT_TESTS
 #ifdef _UNIT_TESTS
@@ -131,20 +137,12 @@ int main() {
     return 0;
 #endif
     char *buffer = NULL;
-    int error = NO_ERROR;
     size_t max_size = BUFFER_SIZE;
     while (get_string(&buffer, &max_size, '\n', stdin) == NO_ERROR) {
-        error = check_string(buffer);
+        int error = prepare_string_for_processing(&buffer);
         if (error == NO_ERROR) {
-            error = add_circle_brackets_to_string(&buffer);
-            if (error == NO_ERROR) {
-                error = merge_all_sets_in_string_into_one(buffer);
-                if (error == NO_ERROR) {
-                    print_without_spaces(buffer);
-                }
-            }
-        }
-        if (error != NO_ERROR) {
+            process_string(buffer);
+        } else {
             printf("[error]");
         }
         free(buffer);
@@ -153,6 +151,36 @@ int main() {
     }
     free(buffer);
     return 0;
+}
+
+int prepare_string_for_processing(char* string[]) {
+	assert(string != NULL)
+	
+	if (string == NULL) {
+		return WRONG_INPUT;
+	}
+	
+	int error = check_string(*string);
+	if (error == NO_ERROR) {
+		error = add_circle_brackets_to_string(string);
+	}
+    return error;
+}
+
+void process_string(char string[])
+{
+	assert(string != NULL)
+	
+	if (string == NULL) {
+		return WRONG_INPUT;
+	}
+	
+	int error = merge_all_sets_in_string_into_one(string);
+	if (error == NO_ERROR) {
+		print_without_spaces(string);
+	} else {
+		printf("[error]");
+	}
 }
 
 void swap(int *a, int *b) {
@@ -468,96 +496,11 @@ bool is_symbol_operator(char symbol) {
     return symbol == 'U' || symbol == '^' || symbol == '\\';
 }
 
-// Обновить флаги проверок после обнаружения в строке цифры и провести
-// проверку может ли цифра находится в этом месте строки
-void work_with_symbol_number(const bool after_left_square, bool *after_comma,
-                             bool *after_number, int *error) {
-    // Если число вне скобок
-    if (after_left_square == false) {
-        *error = ERROR_NUMBER_NOT_IN_SET;
-    }
-    *after_comma = false;  // следующий символ  не находится за запятой
-    *after_number = true;  // следующий символ находится за числом
-}
-
-// Обновить флаги проверок после обнаружения в строке запятой и провести
-// проверку может ли запятая находится в этом месте строки
-void work_with_symbol_comma(bool *after_number, bool *after_comma, int *error) {
-    // Если запятая не идет после числа
-    if (*after_number == false) {
-        *error = ERROR_COMMA_NOT_AFTER_NUMBER;
-    }
-    *after_number = false;  // следующий символ не находится за числом
-    *after_comma = true;  // следующий символ находится за запятой
-}
-
-// Обновить флаги проверок после обнаружения в строке одного из операторов
-// и провести проверку может ли оператор находится в этом месте строки
-void work_with_symbol_operator(const bool after_left_square,
-                               int *operator_amount, int *after_operator,
-                               int *error) {
-    // Если оператор идет после '['
-    if (after_left_square == true) {
-        *error = ERROR_OPERATOR_IN_SET;
-    }
-    *operator_amount = *operator_amount + 1;  // Инкремент количества операторов
-    *after_operator = 1;
-}
-
-void work_left_square_bracket(const int circle_brackets_amount,
-                              int *after_operator, bool *after_left_square,
-                              bool *square_in_circle, int *set_amount,
-                              int *error) {
-    // Если множество не за оператором
-    if (*after_operator == 0) {
-        *error = ERROR_OPERATOR_WITHOUT_SETS;
-    }
-    *after_left_square = true;  // Последующие символы после [
-    *after_operator = 0;  // Последующие символы не за оператором
-    *set_amount = *set_amount + 1;  // Инкремент количества множеств
-    if (circle_brackets_amount > 0) {
-        *square_in_circle = true;  // Обнаружено множество в скобках
-    }
-}
-
-void work_right_square_bracket(const bool after_comma, bool *after_left_square,
-                               int *error) {
-    // Если конец множества идёт сразу после запятой
-    if (after_comma == true) {
-        *error = ERROR_COMMA_WITHOUT_NUMBER;
-    }
-    // Если ']' идет первее '['
-    if (*after_left_square == false) {
-        *error = ERROR_SQUERE_END_BEFORE_START;
-    }
-    *after_left_square = false;  // Дальше символы идут вне множества
-}
-
-void work_left_circle_bracket(const bool after_left_square,
-                              bool *square_in_circle,
-                              int *circle_brackets_amount, int *error) {
-    // Если круглая скобка внутри квадратной
-    if (after_left_square == 1) {
-        *error = ERROR_CIRCLE_IN_SQUERE;
-    }
+void update_flags_after_left_circle_bracket(bool *square_in_circle,
+        int *circle_brackets_amount) {
     // Последующие символы после '('
     *circle_brackets_amount = *circle_brackets_amount + 1;
     *square_in_circle = 0;  // Скобки не содержат множеств
-}
-
-void work_right_circle_bracket(int *circle_brackets_amount, int *after_operator,
-                               int *error) {
-    // Количество скобок уменьшилось
-    *circle_brackets_amount = *circle_brackets_amount - 1;
-    // Если ')' идет первее '('
-    if (*circle_brackets_amount < 0) {
-        *error = ERROR_CIRCLE_END_BEFORE_START;
-    }
-    // Если еще не было обьявлено ни одного множества
-    if (*after_operator == -1) {
-        *error = ERROR_NO_SQUERE_IN_CIRCLE;
-    }
-    *after_operator = 0;  // Следующее множество не за оператором
 }
 
 // Получить размер строки string
@@ -611,9 +554,7 @@ int check_string(const char string[]) {
     }
 
     bool after_number = false;  // находится ли символ после числа
-    // Находится ли множество за оператором
-    // -1 - первый элемент, 1 - находится за оператором, 0 - не находится
-    int after_operator = -1;
+    bool after_operator = false;  // находится ли символ за оператором
     bool after_comma = false;  // находится ли символ за запятой
 
     bool after_left_square = false;  // после '['
@@ -637,30 +578,71 @@ int check_string(const char string[]) {
             ++symbol) {
         if (*symbol == symbol_space) {
         } else if (is_symbol_number(*symbol)) {
-            work_with_symbol_number(after_left_square, &after_comma, &after_number,
-                                    &error);
+            // Если число вне скобок
+            if (after_left_square == false) {
+                error = ERROR_NUMBER_NOT_IN_SET;
+            }
+			after_comma = false;  // следующий символ  не находится за запятой
+			after_number = true;  // следующий символ находится за числом
         } else if (*symbol == symbol_comma) {
-            work_with_symbol_comma(&after_number, &after_comma, &error);
+            // Если запятая не идет после числа
+            if (after_number == false) {
+                error = ERROR_COMMA_NOT_AFTER_NUMBER;
+            }
+            after_number = false;  // следующий символ не находится за числом
+			after_comma = true;  // следующий символ находится за запятой
         } else if (is_symbol_operator(*symbol)) {
-            work_with_symbol_operator(after_left_square, &operator_amount,
-                                      &after_operator, &error);
+            // Если оператор идет после '['
+            if (after_left_square == true) {
+                error = ERROR_OPERATOR_IN_SET;
+            }
+            after_operator = true;
+            ++operator_amount;
         } else if (*symbol == symbol_left_square_bracket) {
-            work_left_square_bracket(circle_brackets_amount, &after_operator,
-                                     &after_left_square, &square_in_circle,
-                                     &set_amount, &error);
+            // Если множество не за оператором
+            if (after_operator == false && set_amount != 0) {
+                error = ERROR_OPERATOR_WITHOUT_SETS;
+            }
+            after_left_square = true;  // Последующие символы после [
+			++set_amount;  // Инкремент количества множеств
+			square_in_circle = true;  // Обнаружено множество в скобках
+			after_operator = false;
         } else if (*symbol == symbol_right_square_bracket) {
-            work_right_square_bracket(after_comma, &after_left_square, &error);
+            // Если конец множества идёт сразу после запятой
+            if (after_comma == true) {
+                error = ERROR_COMMA_WITHOUT_NUMBER;
+            }
+            // Если ']' идет первее '['
+            if (after_left_square == false) {
+                error = ERROR_SQUERE_END_BEFORE_START;
+            }
+            after_left_square = false;
         } else if (*symbol == symbol_left_circle_bracket) {
-            work_left_circle_bracket(after_left_square, &square_in_circle,
-                                     &circle_brackets_amount, &error);
+            // Если круглая скобка внутри квадратной
+            if (after_left_square == 1) {
+                error = ERROR_CIRCLE_IN_SQUERE;
+            }
+			++circle_brackets_amount;
+			square_in_circle = false;  // Скобки не содержат множеств
         } else if (*symbol == symbol_right_circle_bracket) {
-            work_right_circle_bracket(&circle_brackets_amount, &after_operator,
-                                      &error);
+            // Количество скобок уменьшилось
+            --circle_brackets_amount;
+            // Если ')' идет первее '('
+            if (circle_brackets_amount < 0) {
+                error = ERROR_CIRCLE_END_BEFORE_START;
+            }
+            // Если еще не было обьявлено ни одного множества
+            if (set_amount == 0) {
+                error = ERROR_NO_SQUERE_IN_CIRCLE;
+            }
+            after_operator = false;  // Следующее множество не за оператором
         } else {  // если запрещенный символ
             error = ERROR_WRONG_SYMBOL;
         }
     }
-
+    if (error != NO_ERROR) {
+        return error;
+    }
     // Если одна из круглых скобок не закрылась
     if (circle_brackets_amount > 0) {
         error = ERROR_NO_CIRCLE_END;
@@ -962,7 +944,7 @@ void case_operator_without_numbers() {
 void case_operator_between_numbers() {
     char string[] = "[U 1 U]";
     int error = check_string(string);
-    print_result_of_unit_test(ERROR_OPERATOR_WITHOUT_SETS, error, string);
+    print_result_of_unit_test(ERROR_OPERATOR_IN_SET, error, string);
 }
 
 void case_set_has_no_end() {
@@ -972,9 +954,9 @@ void case_set_has_no_end() {
 }
 
 void case_set_has_no_start() {
-    char string[] = "1,2,3,4]";
+    char string[] = "   ]";
     int error = check_string(string);
-    print_result_of_unit_test(ERROR_NO_SQUERE_END, error, string);
+    print_result_of_unit_test(ERROR_SQUERE_END_BEFORE_START, error, string);
 }
 
 void case_error_incorrect_set() {
