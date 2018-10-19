@@ -31,23 +31,29 @@ Memory limit:	64 M
 #include <assert.h>
 #include <stdbool.h>
 
-#define NO_ERROR 0
-#define WRONG_INPUT -2
-#define MEMORY_ERROR -1
+enum errors {
+	NO_ERROR = 0,
+	MEMORY_ERROR = -1,
+	WRONG_INPUT = -2,
+	ERROR_NUMBER_NOT_IN_SET = -3,
+	ERROR_COMMA_NOT_AFTER_NUMBER = -4,
+	ERROR_OPERATOR_IN_SET = -5,
+	ERROR_OPERATOR_WITHOUT_SETS = -6,
+	ERROR_SQUERE_END_BEFORE_START = -7,
+	ERROR_CIRCLE_END_BEFORE_START = -8,
+	ERROR_CIRCLE_IN_SQUERE = -9,
+	ERROR_NO_SQUERE_END = -10,
+	ERROR_NO_CIRCLE_END = -11,
+	ERROR_WRONG_SYMBOL = -12,
+	ERROR_WRONG_NUMBER_OF_OPERATORS = -13,
+	ERROR_COMMA_WITHOUT_NUMBER = -14,
+	ERROR_NO_SQUERE_IN_CIRCLE = -15
+};
 
-#define ERROR_NUMBER_NOT_IN_SET -3
-#define ERROR_COMMA_NOT_AFTER_NUMBER -4
-#define ERROR_OPERATOR_IN_SET -5
-#define ERROR_OPERATOR_WITHOUT_SETS -6
-#define ERROR_SQUERE_END_BEFORE_START -7
-#define ERROR_CIRCLE_END_BEFORE_START -8
-#define ERROR_CIRCLE_IN_SQUERE -9
-#define ERROR_NO_SQUERE_END -10
-#define ERROR_NO_CIRCLE_END -11
-#define ERROR_WRONG_SYMBOL -12
-#define ERROR_WRONG_NUMBER_OF_OPERATORS -13
-#define ERROR_COMMA_WITHOUT_NUMBER -14
-#define ERROR_NO_SQUERE_IN_CIRCLE -15
+enum sets_status { 
+	READY_FOR_OPERATION = 1,
+	NOT_READY_FOR_OPERATION = 2,
+};
 
 #define BUFFER_SIZE 32
 
@@ -366,20 +372,20 @@ numeric_set_t *get_intersection_of_sets(numeric_set_t *A, numeric_set_t *B,
 		return NULL;
 	}
 
-    size_t sizeA = A->real_size;
-    size_t sizeB = B->real_size;
-    size_t iA = 0;
-    size_t iB = 0;
+    size_t size_of_A = A->real_size;
+    size_t size_of_B = B->real_size;
+    size_t index_in_A = 0;
+    size_t index_in_B = 0;
 
-    while ((iA < sizeA) && (iB < sizeB) && (*error == NO_ERROR)) {
-        if (A->numbers[iA] < B->numbers[iB]) {
-            ++iA;
-        } else if (A->numbers[iA] > B->numbers[iB]) {
-            ++iB;
+    while ((index_in_A < size_of_A) && (index_in_B < size_of_B) && (*error == NO_ERROR)) {
+        if (A->numbers[index_in_A] < B->numbers[index_in_B]) {
+            ++index_in_A;
+        } else if (A->numbers[index_in_A] > B->numbers[index_in_B]) {
+            ++index_in_B;
         } else {
-            *error = set_add(ret, A->numbers[iA]);
-            ++iB;
-            ++iA;
+            *error = set_add(ret, A->numbers[index_in_A]);
+            ++index_in_B;
+            ++index_in_A;
         }
     }
 
@@ -408,10 +414,10 @@ numeric_set_t *get_subtraction_of_sets(numeric_set_t *A, numeric_set_t *B,
         return NULL;
     }
 
-    size_t sizeA = A->real_size;
-    size_t sizeB = B->real_size;
-    size_t iA = 0;
-    size_t iB = 0;
+    size_t size_of_A = A->real_size;
+    size_t size_of_B = B->real_size;
+    size_t index_in_A = 0;
+    size_t index_in_B = 0;
 
     numeric_set_t *ret = set_create(error);
 	if (ret == NULL) {
@@ -419,23 +425,23 @@ numeric_set_t *get_subtraction_of_sets(numeric_set_t *A, numeric_set_t *B,
 		return NULL;
 	}
 
-    while ((iA < sizeA) && (iB < sizeB) && (*error == NO_ERROR)) {
-        if (A->numbers[iA] < B->numbers[iB]) {
-            ++iA;
-        } else if (A->numbers[iA] > B->numbers[iB]) {
-            *error = set_add(ret, B->numbers[iB]);
-            ++iB;
+    while ((index_in_A < size_of_A) && (index_in_B < size_of_B) && (*error == NO_ERROR)) {
+        if (A->numbers[index_in_A] < B->numbers[index_in_B]) {
+            ++index_in_A;
+        } else if (A->numbers[index_in_A] > B->numbers[index_in_B]) {
+            *error = set_add(ret, B->numbers[index_in_B]);
+            ++index_in_B;
         } else {
-            ++iB;
-            ++iA;
+            ++index_in_B;
+            ++index_in_A;
         }
     }
 
     // Если не все элементы из множества B успели залететь
     // Например если размер B гораздо больше А
-    while ((iB < sizeB) && (*error == NO_ERROR)) {
-        *error = set_add(ret, A->numbers[iB]);
-        iB++;
+    while ((index_in_B < size_of_B) && (*error == NO_ERROR)) {
+        *error = set_add(ret, A->numbers[index_in_B]);
+        index_in_B++;
     }
 
     if (*error != NO_ERROR) {
@@ -555,6 +561,33 @@ int add_circle_brackets_to_string(char *string[]) {
     return NO_ERROR;
 }
 
+// Проверить правильность расположения скобок. Возвращает код ошибки
+int check_correctness_of_brackets_placement(int circle_brackets_amount,
+											int after_left_square,
+											int set_amount,
+											int operator_amount,
+											bool square_in_circle)
+{
+	// Если одна из круглых скобок не закрылась
+    if (circle_brackets_amount > 0) {
+        return ERROR_NO_CIRCLE_END;
+    }
+    // Если одна из квадратных скобок не закрылась
+    else if (after_left_square > 0) {
+        return ERROR_NO_SQUERE_END;
+    }
+    // Операторов всегда на 1 меньше чем множеств(например [] U [] ^ [])
+    // Если это не так, то значит входные данные не верны
+    else if (set_amount - operator_amount != 1) {
+        return ERROR_WRONG_NUMBER_OF_OPERATORS;
+    }
+    // Круглые скобки не содержут в себе множеств
+    else if (square_in_circle == false) {
+        return ERROR_NO_SQUERE_IN_CIRCLE;
+    }
+	return NO_ERROR;
+}
+
 // Проверить строку string на корректность в рамках ТЗ
 // Возвращает код ошибки
 int check_string(const char string[]) {
@@ -578,16 +611,16 @@ int check_string(const char string[]) {
     int error = NO_ERROR;
 
     // Именованные константы
-    const char symbol_space = ' ';
-    const char symbol_comma = ',';
-    const char symbol_left_square_bracket = '[';
-    const char symbol_right_square_bracket = ']';
-    const char symbol_left_circle_bracket = '(';
-    const char symbol_right_circle_bracket = ')';
+    const char SYMBOL_SPACE = ' ';
+    const char SYMBOL_COMMA = ',';
+    const char SYMBOL_LEFT_SQUEARE_BRACKET = '[';
+    const char SYMBOL_RIGHT_SQUEARE_BRACKET = ']';
+    const char SYMBOL_LEFT_CIRCLE_BRACKET = '(';
+    const char SYMBOL_RIGHT_CIRCLE_BRACKET = ')';
 
     for (const char *symbol = string; *symbol != '\0' && error == NO_ERROR;
             ++symbol) {
-        if (*symbol == symbol_space) {
+        if (*symbol == SYMBOL_SPACE) {
         } else if (is_symbol_number(*symbol)) {
             // Если число вне скобок
             if (after_left_square == false) {
@@ -595,7 +628,7 @@ int check_string(const char string[]) {
             }
 			after_comma = false;  // следующий символ  не находится за запятой
 			after_number = true;  // следующий символ находится за числом
-        } else if (*symbol == symbol_comma) {
+        } else if (*symbol == SYMBOL_COMMA) {
             // Если запятая не идет после числа
             if (after_number == false) {
                 error = ERROR_COMMA_NOT_AFTER_NUMBER;
@@ -609,7 +642,7 @@ int check_string(const char string[]) {
             }
             after_operator = true;
             ++operator_amount;
-        } else if (*symbol == symbol_left_square_bracket) {
+        } else if (*symbol == SYMBOL_LEFT_SQUEARE_BRACKET) {
             // Если множество не за оператором
             if (after_operator == false && set_amount != 0) {
                 error = ERROR_OPERATOR_WITHOUT_SETS;
@@ -618,7 +651,7 @@ int check_string(const char string[]) {
 			++set_amount;  // Инкремент количества множеств
 			square_in_circle = true;  // Обнаружено множество в скобках
 			after_operator = false;
-        } else if (*symbol == symbol_right_square_bracket) {
+        } else if (*symbol == SYMBOL_RIGHT_SQUEARE_BRACKET) {
             // Если конец множества идёт сразу после запятой
             if (after_comma == true) {
                 error = ERROR_COMMA_WITHOUT_NUMBER;
@@ -628,14 +661,14 @@ int check_string(const char string[]) {
                 error = ERROR_SQUERE_END_BEFORE_START;
             }
             after_left_square = false;
-        } else if (*symbol == symbol_left_circle_bracket) {
+        } else if (*symbol == SYMBOL_LEFT_CIRCLE_BRACKET) {
             // Если круглая скобка внутри квадратной
             if (after_left_square == 1) {
                 error = ERROR_CIRCLE_IN_SQUERE;
             }
 			++circle_brackets_amount;
 			square_in_circle = false;  // Скобки не содержат множеств
-        } else if (*symbol == symbol_right_circle_bracket) {
+        } else if (*symbol == SYMBOL_RIGHT_CIRCLE_BRACKET) {
             // Количество скобок уменьшилось
             --circle_brackets_amount;
             // Если ')' идет первее '('
@@ -654,25 +687,12 @@ int check_string(const char string[]) {
     if (error != NO_ERROR) {
         return error;
     }
-    // Если одна из круглых скобок не закрылась
-    if (circle_brackets_amount > 0) {
-        error = ERROR_NO_CIRCLE_END;
-    }
-    // Если одна из квадратных скобок не закрылась
-    else if (after_left_square > 0) {
-        error = ERROR_NO_SQUERE_END;
-    }
-    // Операторов всегда на 1 меньше чем множеств(например [] U [] ^ [])
-    // Если это не так, то значит входные данные не верны
-    else if (set_amount - operator_amount != 1) {
-        error = ERROR_WRONG_NUMBER_OF_OPERATORS;
-    }
-    // Круглые скобки не содержут в себе множеств
-    else if (square_in_circle == false) {
-        error = ERROR_NO_SQUERE_IN_CIRCLE;
-    }
-
-    return error;
+   
+    return check_correctness_of_brackets_placement(circle_brackets_amount,
+													after_left_square,
+													set_amount,
+													operator_amount,
+													square_in_circle);
 }
 
 // Выполнить операцию operator над множествами first и second
@@ -716,6 +736,25 @@ numeric_set_t *apply_operation(char operator, numeric_set_t *first,
     return result;
 }
 
+// Возвращает код готовности множеств из sets_status или
+// код ошибки
+int get_sets_status(int number, char real_operator,
+				char expected_operator,	numeric_set_t *first_set) {
+	if (number != 0) {
+		int error = set_add(first_set, number);
+		if (error != NO_ERROR) {
+			return error;
+		}
+	}
+	// Если перед данным множеством стоял оператор, соответсвующий
+	// актуальному current_operator (с точки зрения приоритета выполнения)
+	if (real_operator == expected_operator) {
+		return READY_FOR_OPERATION;
+	} else {
+		return NOT_READY_FOR_OPERATION;
+	}
+}
+
 // Произвести соответсвеющие оператору current_operator операции над
 // множествами в строке от begin до end.
 // Возвращает код ошибки
@@ -736,73 +775,87 @@ int calculate_sets_in_string(char *begin, char *end, char current_operator) {
 
     int number = 0;
 
-    // Именованные константы
-    const char symbol_space = ' ';
-    const char symbol_comma = ',';
-    const char symbol_left_square_bracket = '[';
-    const char symbol_right_square_bracket = ']';
-
     for (char *letter = begin; error == NO_ERROR && letter < end; ++letter) {
         // Если встретили '[', создаем множество
-        if (*letter == symbol_left_square_bracket) {
-            first = set_create();
-			if (first == NULL) {
-				error = MEMORY_ERROR;
+		switch(*letter) {
+			case '[':
+			{
+				if ((first = set_create()) == NULL) {
+					error = MEMORY_ERROR;
+				}
+				number = 0;
+
+				// Определяем, что перед нами множество, стоящее слева от
+				//оператора
+				if (!(operator == current_operator)) {
+					localBegin = letter;
+				}
+				break;
 			}
-            number = 0;
-
-            // Определяем, что перед нами множество, стоящее слева от
-            // оператора
-            if (!(operator== current_operator)) {
-                localBegin = letter;
-            }
-        } else if (*letter == symbol_right_square_bracket) {
-            // Если встретили ']', добавляем последнее найденное число
-            if (number != 0) {
-                error = set_add(first, number);
-            }
-            number = 0;
-
-            if (error == NO_ERROR) {
-                // Если перед данным множеством стоял оператор, соответсвующий
-                // актуальному current_operator (с точки зрения приоритета выполнения)
-                if (operator== current_operator) {
-                    second = apply_operation(operator, first, second, &error);
-                    if (error == NO_ERROR) {
-                        // Перезаписываем ту часть строки, где стояли 2 множества
-                        // с оператором в результирующее множество, например
-                        // '[1,2]U[3]' -> '[1,2,3  ]'
-                        numeric_set_to_string(second, localBegin, letter);
-
-                        operator= ' ';
-                    }
-                } else {
-                    // Если оператор не соответсвует приоритету, то сотрём
-                    // записанное множество. Если множество было первым, то
-                    // стирать нечего, поэтому проверяем second на NULL
-                    if (second != NULL) {
-                        set_clear(second);
-                    }
-                    // second указывает на множество, которое левее оператора
-                    // first же всегда указывает на последнее найденное множество
-                    second = first;
-                    first = NULL;
-                }
-            }
-        } else if (*letter == symbol_comma) {
-            // Если встретили запятую, значит до этого было число,
-            // которое надо записать в множество
-            set_add(first, number);
-            number = 0;
-        } else if (is_symbol_number(*letter)) {
-            // найденную цифру помещаем в число
-            number *= 10;
-            number += (*letter - '0');
-        } else if (*letter == symbol_space) {
-            // Пробелы пропускаем
-        } else {
-            operator= *letter;
-        }
+			case ']' :
+			{
+				int situation = get_sets_status(number, operator,
+												current_operator, first);
+				switch(situation)
+				{
+					case READY_FOR_OPERATION:
+					{
+						second = apply_operation(operator, first, second, &error);
+						if (error == NO_ERROR) {
+							// Перезаписываем ту часть строки, где стояли 2 множества
+							// с оператором в результирующее множество, например
+							// '[1,2]U[3]' -> '[1,2,3  ]'
+							numeric_set_to_string(second, localBegin, letter);
+						}
+						break;
+					}
+					case NOT_READY_FOR_OPERATION:
+					{
+						// Если оператор не соответсвует приоритету, то сотрём
+						// записанное множество. Если множество было первым, то
+						// стирать нечего, поэтому проверяем second на NULL
+						if (second != NULL) {
+							set_clear(second);
+						}
+						// second указывает на множество, которое левее оператора
+						// first же всегда указывает на последнее найденное множество
+						second = first;
+						first = NULL;
+						break;
+					}
+					default:
+					{
+						error = situation;
+					}
+				}
+				operator= ' ';
+				number = 0;
+				break;
+			}
+			case ',':
+			{
+				// Если встретили запятую, значит до этого было число,
+				// которое надо записать в множество
+				error = set_add(first, number);
+				number = 0;
+				break;
+			}
+			case ' ':
+			{
+				// Пробелы пропускаем
+				break;
+			}
+			default:
+			{
+				if (is_symbol_number(*letter)) {
+					// найденную цифру помещаем в число
+					number *= 10;
+					number += (*letter - '0');
+				} else {
+					operator= *letter;
+				}
+			}
+		}
     }
     set_clear(second);
     return error;
@@ -877,10 +930,10 @@ int merge_all_sets_in_string_into_one(char string[]) {
             &right_circle)) {
         // Цикл по строке из символов - операторов.
         // В строку они записаны в порядке понижения приоритета
-        for (char *currentOperator = operations;
-                *currentOperator != '\0' && error == NO_ERROR; ++currentOperator) {
+        for (char *current_operator = operations;
+                *current_operator != '\0' && error == NO_ERROR; ++current_operator) {
             error =
-                calculate_sets_in_string(left_circle, right_circle, *currentOperator);
+                calculate_sets_in_string(left_circle, right_circle, *current_operator);
         }
         // Заменяем скобки на пробелы, чтобы второй раз не обрабатывать
         // содержимое уже пройденных скобок
