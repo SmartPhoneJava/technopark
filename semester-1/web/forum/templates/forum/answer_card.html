@@ -1,0 +1,58 @@
+  {% load static %}
+<html>
+    <head>
+		<title>Ask World</title>
+		<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+		<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+		<link rel="stylesheet" href="{% static 'css/answer.css' %}">
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    </head>
+	<body>
+	<div class="inline">
+		<div class="inline wrapper">
+			<div class = "rating">
+				<button  class="orange_20pt glyphicon glyphicon-plus"
+				   href="#"
+					style="font-size: 12pt; background-color: grey;
+				 margin: 1pt;" >
+				</button>
+
+				</br><div class="orange_20pt" style="font-size: 12pt; margin: 1pt;
+				background-color: grey;"> {{answer.author.rating}}
+				</div>
+
+				<button  class="orange_20pt glyphicon glyphicon-minus"
+				   href="#"
+					style="font-size: 12pt; background-color: grey;
+				 margin: 1pt;" >
+				</button>
+			</div>
+
+			<div class="boxf nickname">
+				<a id = "answers_nickname" class="answernick" href="{% url 'profile_page' pk=answer.author.pk %}">
+					{{answer.author}}
+				</a>
+			</div>
+			<div class="boxf date">{{answer.created_date}}</div>
+			<div class="boxf users_answer">
+				{% if not details %}
+				<a href="{% url 'post_detail' pk=answer.question.pk %}">
+					{% endif%}
+						{{answer.content}}
+					{% if not details %}
+				</a>
+				{% endif%}
+
+			</div>
+			<div class="button">
+				{% if details %}
+					{% include 'forum/answer_buttons.html'%}
+				{% endif%}
+			</div>
+
+			<div class="boxf ava"> <img width = 64 height = 64 src="/media/images/{{answer.author.getImage}} "> </div>
+
+		</div>
+	</div>
+	</body>
+</html>

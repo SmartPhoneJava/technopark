@@ -1,0 +1,11 @@
+
+
+{% for question in questions %}
+    {% include 'forum/question_card.html' %}
+{% endfor %}
+ {% include 'forum/paginator.html' %}
+{% if not questions %}
+     <div style="color:grey; ont-weight: bold;font-size:30px; text-align:center; margin: 20px">
+					 Вопросов не найдено.
+     </div>
+{% endif %}

@@ -1,0 +1,15 @@
+{% extends 'forum/base.html' %}
+
+{% block content %}
+ <h1>Авторизация{% if error != 0%}
+            .  Неправильный логин или пароль. Попробуйте еще раз!
+			{% endif %}
+ </h1>
+    <form method="POST" class="post-form">{% csrf_token %}
+        {{ form.as_p }}
+		<button type="submit" class="save btn btn-default">Отправить</button>
+    </form>
+<form action="/">
+    <button taction="/"> Назад</button>
+</form>
+{% endblock %}

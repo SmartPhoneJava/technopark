@@ -1,0 +1,27 @@
+{% if not details %}
+			<a style="color: white;"
+               href="{% url 'post_detail' pk=question.pk %}"
+               class=" glyphicon glyphicon-comment" >
+            </a>
+				{{question.getAnswersAmount}}
+{% endif %}
+{% if details %}
+			<b style="color: white;"
+               href="{% url 'post_detail' pk=question.pk %}"
+               class=" glyphicon glyphicon-comment" >
+            </b>
+				{{question.getAnswersAmount}}
+{% endif %}
+</br>
+<b style="color: white;"
+   class=" glyphicon glyphicon-eye-open" >
+</b>
+    {{question.views}}
+</br>
+<a id = "edit question button" class="btn btn-default"
+   href="{% url 'post_edit' pk=question.pk %}"
+    style="display:none">
+    <span class="glyphicon glyphicon-pencil">
+
+    </span>
+</a>

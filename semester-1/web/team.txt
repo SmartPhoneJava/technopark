@@ -1,0 +1,29 @@
+<code class="cpp">{
+       "name": "escapade",
+       "project": {
+                "name": "battle of programmable tanks",
+                "description": "2d сражение нескольких танков, управление которыми происходит с помощью модулей, написанных игроками."
+        },
+        "size": 3,
+        "members": [
+                {
+                        "name": "Иван",
+                        "surname": "Спасенов",
+                        "group": "АПО-11",
+                        "link_to_git_profile": "github.com/avandelon"
+                },
+                {
+                        "name": "Артём",
+                        "surname": "Доктор",
+                        "group": "АПО-11",
+                        "link_to_git_profile": "github.com/SmartPhoneJava"
+                },
+                {
+                        "name": "Александр",
+                        "surname": "Баженов",
+                        "group": "АПО-12",
+                        "link_to_git_profile": "github.com/ByLf"
+                }
+        ],
+        "team_lead": "Иван Спасенов"
+}</code>

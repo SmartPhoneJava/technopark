@@ -1,0 +1,55 @@
+
+
+.inline {
+display: inline-block;
+}
+
+.wrapper {
+    display: grid;
+	background-color: #fff;
+	color: #444;
+	position: relative;
+	width: auto;
+	margin: 5px;
+	padding: 5px;
+	
+	background-color: #ffffff; /* Фоновый цвет*/
+	border-radius: 10px; /* Радиус границ*/
+	box-shadow: 0 0 15px #A9A9A9; /* Размер и цвет тени блока*/
+	}
+
+	.boxf {
+		border-radius: 10px;
+		padding: 2px;
+		font-size: 100%;
+	}
+
+	.rating {
+		grid-column: 1 / 2;
+		grid-row: 1 / 5;
+	}
+
+	.button {
+		grid-column: 6 / 7;
+		grid-row: 1 / 4;
+	}
+	
+	.ava {
+		grid-column: 2 / 3;
+		grid-row: 1 / 5;
+	}
+	.nickname {
+		color: #000;
+		grid-column: 3 / 4 ;
+		grid-row: 1 / 2;
+	}
+	
+	.users_answer {
+		grid-column: 3 / 7 ;
+		grid-row: 2 / 4 ;
+	}
+	.date {
+		
+		grid-column: 5 / 6;
+		grid-row: 1 / 2;
+	}

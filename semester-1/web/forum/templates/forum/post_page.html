@@ -1,0 +1,16 @@
+{% extends 'forum/base.html' %}
+{% load staticfiles%}
+{% block content %}
+<script src="{% static 'js/srf.js' %}" type="text/javascript"></script>
+
+   {% include 'forum/question_card.html' %}
+
+    {% include 'forum/answers_list.html' %}
+
+	<form method="POST" class="post-form">{% csrf_token %}
+		{{ form.as_p }}
+	<input type="submit">
+ </form>
+<script src="{% static 'js/question_page.js' %}" type="text/javascript"></script>
+
+{% endblock %}

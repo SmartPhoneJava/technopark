@@ -1,0 +1,22 @@
+
+<span data-id_answer="{{answer.id}}" data-id_question="{{question.id}}" data-action="best_ans" title="Best answer">
+    {% if answer.is_right %}
+    <a href="#">
+        <span class="orange_20pt glyphicon glyphicon-ok" style="font-size: 34pt; padding: 5pt; margin: 1pt; background-color: green;">
+        </span>
+    </a>
+    {% else %}
+    <a href="#"><span class="orange_20pt glyphicon glyphicon-ok" style="display:none; font-size: 34pt; padding: 5pt; margin: 1pt; background-color: grey;">
+
+    </span></a>
+    {% endif %}
+<span data-count="best_ans">{% if answer.is_best %} Best answer {% endif %}</span>
+</span>.
+
+
+    <div class="orange_20pt glyphicon glyphicon-pencil" style="display:none; font-size: 12pt; margin: 1pt;">
+
+    </div>
+    <div class="orange_20pt glyphicon glyphicon-remove" style="display:none; font-size: 12pt; margin: 1pt;">
+
+    </div>

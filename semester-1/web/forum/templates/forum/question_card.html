@@ -1,0 +1,38 @@
+  {% load static %}
+<html>
+    <head>
+		<title>Ask World</title>
+		<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+		<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+		<link rel="stylesheet" href="{% static 'css/question.css' %}">
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    </head>
+	<body>
+	<div class="inline">
+		<div class="wrapper_q">
+			<div class="box_q nickname_q">
+				<a href="{% url 'profile_page' pk=question.author.pk %}" class="top-menu">
+					{{question.author}}
+				</a>
+			</div>
+			<div class="box_q date_q">{{question.created_date}}</div>
+			<div class="box_q title_q">{{question.headline}}</div>
+			<div class="box_q content_q">{{question.content}}</div>
+			<div class="box_q inline rating_down_q">-</div>
+			<div class="box_q inline rating_q">{{question.author.rating}}</div>
+			<div class="box_q inline rating_up_q">+</div>
+			<div class="box_q inline ava_q"> <img width = 100 height = 100 src="/media/images/{{question.author.getImage}} "> </div>
+			<div class="box_q button_q">
+					{% include 'forum/question_buttons.html'%}
+			</div>
+		</div>
+		{% for tag in question.getTagsNames %}
+					<a style="font-size:30px color:black;">
+						{% if tag%}
+							{% include 'forum/tag.html' %}
+						{% endif %}
+					</a>
+		{% endfor %}
+	</div>
+	</body>
+</html>

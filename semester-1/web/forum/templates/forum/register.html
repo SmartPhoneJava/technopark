@@ -1,0 +1,20 @@
+{% extends 'forum/base.html' %}
+
+{% block content %}
+
+<body>
+	<title>Регистрация</title>
+	<form action="" method="post">
+		{% csrf_token %}
+		<!-- as_p для того, чтобы каждый элемент формы был с новой строки -->
+		{{ form.as_p }}
+		<button type="submit">
+			Зарегистрироваться
+		</button>
+	</form>
+	
+	<form action="login/page">
+		<button> Уже зарегистрированы?</button>
+	</form>
+</body>
+{% endblock %}

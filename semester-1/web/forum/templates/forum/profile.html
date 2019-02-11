@@ -1,0 +1,76 @@
+{% extends 'forum/base.html' %}
+{% load staticfiles%}
+{% block header %}
+	    <link rel="stylesheet" href="{% static 'css/tabs.css' %}">
+		 <link rel="stylesheet" href="{% static 'css/profile.css' %}">
+		<script src="{% static 'js/tabs.js' %}"></script>
+{% endblock %}
+{% block content %}
+	<div class = "wrapper_p">
+		<div class = "box_p back_p">
+			{% include 'forum/back_button.html'%}
+		</div>
+
+		<div class = "box_p profile_name_p">
+			{% if you %}
+				Ваш профиль:
+			{% endif %}
+			{% if not you  %}
+				Профиль {{profile_show.user.username}}
+			{% endif %}
+		</div>
+
+		<div class = "box_p avatar_p">
+			{% if you %}
+				<form action="/profile/change_photo" method="post" style="float:left;">{% csrf_token %}
+					<button > <img width = 256 height = 256 src="/media/images/{{profile_show.getImage}} "> </button>
+				</form>
+			{% endif %}
+			{% if not you %}
+				<img width = 256 height = 256 src="/media/images/{{profile_show.getImage}} ">
+			{% endif %}
+		</div>
+
+		<div class = "box_p tabs_grid_p">
+			<div class="tab">
+				<button class="tablinks" onclick="openSection(event, 'Вопросы')" id="defaultOpen">
+					{% if you %}
+						Мои вопросы
+					{% endif %}
+					{% if not you %}
+						Вопросы
+					{% endif %}
+				</button>
+				<button class="tablinks" onclick="openSection(event, 'Ответы')">
+					{% if you %}
+						Мои ответы
+					{% endif %}
+					{% if not you %}
+						Ответы
+					{% endif %}
+				</button>
+			</div>
+
+
+
+
+			<!-- Tab content -->
+			<div id="Вопросы" class="tabcontent" style="display: none">
+				<div>
+					Количество: {{questions_size}}
+				</div>
+				{% include 'forum/questions_list.html' %}
+			</div>
+
+
+			<div id="Ответы" class="tabcontent" >
+				<div>
+					Количество: {{answers_size}}
+				</div>
+				{% include 'forum/answers_list.html' %}
+			</div>
+
+		</div>
+	</div>
+
+{% endblock %}
