@@ -1,0 +1,13 @@
+{% load staticfiles%}
+
+<link rel="stylesheet" href="{% static 'css/dropdown.css' %}">
+
+<div class="dropdown">
+  <button onclick="myFunction()" class="dropbtn">{{SORT}}</button>
+  <div id="myDropdown" class="dropdown-content">
+    <a href="/?tag={{TAG}}&page=1&sort=time">Времени</a>
+    <a href="/?tag={{TAG}}&page=1&sort=views">Популярности</a>
+    <a href="/?tag={{TAG}}&page=1&sort=comments">Количеству ответов</a>
+  </div>
+</div>
+ <script src="{% static 'js/dropdown.js' %}"></script>

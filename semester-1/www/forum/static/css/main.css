@@ -1,0 +1,91 @@
+.page-header {
+	color: #ffffff;
+    background-color: #ff9400;
+    padding: 10px 10px 10px 10px;
+    font-size: 36pt;
+	position: relative;
+}
+
+ TABLE {
+    width: 100%; /* Ширина таблицы */
+   }
+   TD {
+    vertical-align: top; /* Выравнивание по верхнему краю ячейки */
+   }
+   #col1 {
+    width: 80%; /* Ширина первой колонки */
+   }
+   #col2 {
+   width: 20%;
+   }
+
+.orange {
+    color: #ffffff;
+    background-color: #ff9400;
+}
+
+.orange_20pt {
+    align:center;
+	color: #ffffff;
+    background-color: #ff9400;
+    padding: 4pt;
+    font-size: 35pt;
+	border-radius: 7pt;
+	margin: 5px;
+	text-align: center;
+	position: relative;
+}
+
+#topNavLine
+{
+    width: 100%;
+    height: 40px;
+    color: #ffffff;
+    background: #ff9400;
+    opacity: 1;
+}
+
+.a_header {
+    float:right;
+    margin: 2px;
+    color: #ffffff;
+    font-size: 20pt;
+}
+
+
+.content {
+    margin-left: 10px;
+	padding: 10px 10px 10px 10px;
+}
+
+h1, h2, h3, h4 {
+    font-family: 'Lobster', cursive;
+}
+
+.date {
+    color: #828282;
+}
+
+.save {
+    float: right;
+}
+
+.post-form textarea, .post-form input {
+    width: 100%;
+}
+
+.top-menu, .top-menu:hover, .top-menu:visited {
+    color: #ffffff;
+    float: right;
+    font-size: 26pt;
+    margin-right: 20px;
+}
+
+button {
+    background-color: Transparent;
+    background-repeat:no-repeat;
+    border: none;
+    cursor:pointer;
+    overflow: hidden;
+    outline:none;
+}

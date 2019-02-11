@@ -1,0 +1,82 @@
+
+.inline {
+display: inline-block;
+}
+
+.wrapper_q {
+    display: grid;
+	background-color: #ff9400;
+	color: #444;
+	position: relative;
+	
+	border-radius: 10px; /* Радиус границ*/
+	box-shadow: 0 0 15px #A9A9A9; /* Размер и цвет тени блока*/
+	border-width: 15px;
+	border-color: #fff;
+	margin: 10px;
+	padding: 5px;
+	}
+
+	.box_q {
+		border-radius: 10px;
+		padding: 2px;
+		background-color: #ff9400;
+		color: #fff;
+		font-size: 100%;
+	}
+	
+	.ava_q {
+		grid-column: 1 / 4;
+		grid-row: 1 / 3;
+		width: 15%;
+	}
+	
+	.rating_down_q {
+		grid-column: 1 / 2 ;
+		grid-row: 3 / 4;
+		text-align: center;
+	}
+	
+	.rating_q {
+		color: #ff9400;
+		background-color: #fff;
+		grid-column: 2 / 3 ;
+		grid-row: 3 / 4;
+		text-align: center;
+	}
+	
+	.rating_up_q {
+		grid-column: 3 / 4 ;
+		grid-row: 3 / 4;
+		text-align: center
+	}
+	
+	.nickname_q {
+		grid-column: 1 / 4 ;
+		grid-row: 4 / 7;
+		text-align: left;
+		font-size: 24px;
+		font-weight: bold;
+	}
+	
+	.date_q {
+		grid-column: 9 / 10;
+		grid-row: 4 / 5;
+		text-align: right;
+	}
+	
+	.content_q {
+		grid-column:  4 / 10 ;
+		grid-row: 2 / 4 ;
+		text-align: left;
+		font-size: 20px;
+	}
+	
+	.title_q {
+		grid-column: 4 / 10 ;
+		grid-row: 1 / 2 ;
+		font-weight: bold;
+		text-align: left;
+		font-size: 30px;
+	}
+	

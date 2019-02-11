@@ -1,0 +1,43 @@
+{% if questions %}
+ </br>
+    <div class="pagination" >
+
+        {% if questions.has_previous %}
+            <a href="?tag={{TAG}}&page={{ questions.previous_page_number }}&sort={{SORT}}">←</a>
+        {% endif %}
+
+        {% for num in questions.paginator.page_range %}
+            {% if num == questions.number %}
+                <span class="current"><b>{{ num }}</b></span>
+            {% else %}
+                <a href="?tag={{TAG}}&page={{ num }}&sort={{SORT}}"> {{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if questions.has_next %}
+            <a href="?tag={{TAG}}&page={{ questions.next_page_number }}&sort={{SORT}}">→</a>
+        {% endif %}
+
+    </div>
+{% endif %}
+{% if answers %}
+ </br>
+    <div class="pagination">
+
+        {% if answers.has_previous %}
+            <a href="?page={{ answers.previous_page_number }}">←</a>
+        {% endif %}
+
+        {% for num in answers.paginator.page_range %}
+            {% if num == answers.number %}
+                <span class="current"><b>{{ num }}</b></span>
+            {% else %}
+                <a href="?page={{ num }}"> {{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if answers.has_next %}
+            <a href="?page={{ answers.next_page_number }}">→</a>
+        {% endif %}
+    </div>
+{% endif %}

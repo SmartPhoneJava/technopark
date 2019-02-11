@@ -1,0 +1,68 @@
+  {% load static %}
+<html>
+    <head>
+        <title>Ask World</title>
+		<link href="{% static 'css/autoSuggest-upshot.css' %}"
+		type="text/css" media="all" rel="stylesheet" />
+		<script type="text/javascript"
+		src="{% static 'js/jquery.autoSuggest.minified.js' %}">
+		</script>
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+	   <link rel="stylesheet" href="{% static 'css/main.css' %}">
+		<link rel="stylesheet" href="{% static 'css/fonts.css' %}">
+	   {% block header %}
+	   {% endblock %}
+	   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    </head>
+    <body>
+		 <div>
+			{% include 'forum/navbar.html' %}
+
+		 </div>
+
+
+		<div style="margin:10px">
+			<table cellpadding="5" cellspacing="0">
+				<tr>
+					 <td id="col1">
+						 {% block content %}
+						{% endblock %}
+					 </td>
+					 <td class = "title_font" id="col2">
+						 <div style=" text-align:center">
+						 Популярные теги:
+							 {% if not tags_list%}
+								Недоступны
+							 {% endif %}
+						 </div>
+
+						  {% for tag in tags_list %}
+						 <div class="orange_20pt tag" style="color:white">
+							 {% include 'forum/tag.html' %}
+						 </div>
+						{% endfor %}
+					 </td>
+				   <div class="content">
+
+
+					</div>
+				</tr>
+			</table>
+		</div>
+		<div id="footer" class="orange">
+		  <div class="container">
+			<p class="text-muted credit" style="color:white">
+				Made By
+				<a href="https://github.com/SmartPhoneJava" style="color:white">
+					Doktor Artyom
+				</a>
+				for
+				<a href="https://park.mail.ru/pages/index/" style="color:white">
+					Mail
+				</a>
+				 in 2018.</p>
+		  </div>
+		</div>
+    </body>
+</html>

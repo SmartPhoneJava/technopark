@@ -1,0 +1,13 @@
+{% extends 'forum/base.html' %}
+
+{% block content %}
+{% include 'forum/back_button.html'%}
+<h1>Выберите аватарку:</h1>
+ <form method="POST" class="post-form">{% csrf_token %}
+  
+{% for file in files %}
+		<button name="some" value="{{file}}">
+		<img width = 64 height = 64  src="/media/images/{{file}}"></button>
+	{% endfor %}
+    </form>
+{% endblock %}

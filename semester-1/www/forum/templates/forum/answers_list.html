@@ -1,0 +1,11 @@
+{% for answer in answers %}
+	<div>
+		{% include 'forum/answer_card.html' %}
+	</div>
+{% endfor %}
+{% include 'forum/paginator.html' %}
+{% if not answers %}
+     <div style="color:grey; ont-weight: bold;font-size:30px; text-align:center; margin: 20px">
+					 Ответов нет.
+     </div>
+{% endif %}

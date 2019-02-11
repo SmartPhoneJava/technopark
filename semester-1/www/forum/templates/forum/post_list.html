@@ -1,0 +1,16 @@
+{% extends 'forum/base.html' %}
+{% load staticfiles%}
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/fonts.css' %}">
+
+ <div class="title_font" style="display: inline; text-align:center">
+					 Отсортировать по
+ </div>
+  <div class="orange_20pt inline" style="font-size:20px;">
+{% include 'forum/dropdown.html'%}
+ </div>
+  </br>
+
+{% include 'forum/questions_list.html' %}
+
+{% endblock %}
